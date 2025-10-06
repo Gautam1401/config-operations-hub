@@ -80,7 +80,7 @@ def initialize_session_state():
 # DATA LOADING
 # ============================================================================
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+@st.cache_data(ttl=300, show_spinner="Loading ARC data...")  # Cache for 5 minutes
 def load_data(use_mock: bool = False):
     """
     Load data from Excel file or mock data
@@ -91,15 +91,21 @@ def load_data(use_mock: bool = False):
     Returns:
         ARCDataProcessor: Data processor instance with loaded data
     """
+    print(f"[DEBUG ARC load_data] use_mock={use_mock}, USE_MOCK_DATA={USE_MOCK_DATA}")
+
     if use_mock:
+        print("[DEBUG ARC] Loading mock data...")
         df = generate_mock_data(MOCK_DATA_ROWS)
     else:
         # Load from Excel file
         try:
+            print("[DEBUG ARC] Loading from Excel file...")
             df = load_arc_data_from_excel()
+            print(f"[DEBUG ARC] Excel loaded successfully: {len(df)} rows")
         except Exception as e:
-            st.error(f"Failed to load Excel file: {e}")
-            st.warning("Using mock data instead")
+            print(f"[ERROR ARC] Failed to load Excel file: {e}")
+            st.error(f"❌ Failed to load Excel file: {e}")
+            st.warning("⚠️ Using mock data instead")
             df = generate_mock_data(MOCK_DATA_ROWS)
 
     # IMPROVEMENT #2: Clean column names immediately after loading
@@ -110,8 +116,8 @@ def load_data(use_mock: bool = False):
         df.rename(columns={'Line of Business': 'Module'}, inplace=True)
 
     # DEBUG: Print columns during development
-    print(f"[DEBUG ARC] Loaded data columns: {df.columns.tolist()}")
-    print(f"[DEBUG ARC] Data shape: {df.shape}")
+    print(f"[DEBUG ARC load_data] Final columns: {df.columns.tolist()}")
+    print(f"[DEBUG ARC load_data] Final shape: {df.shape}")
 
     # Return ARCDataProcessor instance
     return ARCDataProcessor(df)
@@ -471,8 +477,18 @@ def render_arc_dashboard():
     # Initialize session state
     initialize_session_state()
 
+    # Debug info at top
+    st.caption(f"🔧 Debug: USE_MOCK_DATA = {USE_MOCK_DATA}")
+
     # Load data
-    processor = load_data(use_mock=USE_MOCK_DATA)
+    try:
+        processor = load_data(use_mock=USE_MOCK_DATA)
+        st.caption(f"✅ Data loaded: {len(processor.df)} rows")
+    except Exception as e:
+        st.error(f"❌ Error loading data: {e}")
+        import traceback
+        st.code(traceback.format_exc())
+        return
 
     # NO SIDEBAR - User Management sidebar is rendered by main hub
 
