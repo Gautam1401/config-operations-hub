@@ -83,17 +83,18 @@ def initialize_session_state():
 # ============================================================================
 
 @st.cache_data(ttl=300, show_spinner="Loading ARC data...")  # Cache for 5 minutes
-def load_data(use_mock: bool = False):
+def load_data(use_mock: bool = False, version: str = "v2_module_first"):
     """
     Load data from Excel file or mock data
 
     Args:
         use_mock: Whether to use mock data (default: False - use real Excel data)
+        version: Version string to force cache refresh (default: v2_module_first)
 
     Returns:
         ARCDataProcessor: Data processor instance with loaded data
     """
-    print(f"[DEBUG ARC load_data] use_mock={use_mock}, USE_MOCK_DATA={USE_MOCK_DATA}")
+    print(f"[DEBUG ARC load_data] use_mock={use_mock}, USE_MOCK_DATA={USE_MOCK_DATA}, version={version}")
 
     if use_mock:
         print("[DEBUG ARC] Loading mock data...")
@@ -536,12 +537,21 @@ def render_arc_dashboard():
     # Initialize session state
     initialize_session_state()
 
+    # Version indicator with cache clear button
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.info("🆕 **NEW FLOW:** Module → KPI → Region → Table (v2.0)")
+    with col2:
+        if st.button("🔄 Clear Cache", key="arc_clear_cache"):
+            st.cache_data.clear()
+            st.rerun()
+
     # Debug info at top
     st.caption(f"🔧 Debug: USE_MOCK_DATA = {USE_MOCK_DATA}")
 
     # Load data
     try:
-        processor = load_data(use_mock=USE_MOCK_DATA)
+        processor = load_data(use_mock=USE_MOCK_DATA, version="v2_module_first")
         st.caption(f"✅ Data loaded: {len(processor.df)} rows")
     except Exception as e:
         st.error(f"❌ Error loading data: {e}")
