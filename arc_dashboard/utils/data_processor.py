@@ -36,17 +36,23 @@ class ARCDataProcessor:
         """
         Prepare data: convert dates, calculate days to go live, etc.
         """
+        # Debug: Print columns at start
+        print(f"[DEBUG ARCDataProcessor] Columns received: {self.df.columns.tolist()}")
+        print(f"[DEBUG ARCDataProcessor] Data shape: {self.df.shape}")
+
         # Convert Go Live Date to datetime
-        self.df['Go Live Date'] = pd.to_datetime(self.df['Go Live Date'])
-        
+        self.df['Go Live Date'] = pd.to_datetime(self.df['Go Live Date'], errors='coerce')
+
         # Calculate Days to Go Live
         today = pd.Timestamp(datetime.now().date())
         self.df['Days to Go Live'] = (self.df['Go Live Date'] - today).dt.days
-        
+
         # Add Month and Year columns for filtering
         self.df['Month'] = self.df['Go Live Date'].dt.month
         self.df['Year'] = self.df['Go Live Date'].dt.year
         self.df['Month Name'] = self.df['Go Live Date'].dt.strftime('%B %Y')
+
+        print(f"[DEBUG ARCDataProcessor] Data prepared successfully")
     
         
         # DEBUG: Print columns after preparation
@@ -89,23 +95,35 @@ class ARCDataProcessor:
     def get_kpi_counts(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
         """
         Calculate KPI counts
-        
+
         Args:
             df: DataFrame to calculate from (uses self.df if None)
-            
+
         Returns:
             dict: KPI counts
         """
         if df is None:
             df = self.df
-        
+
+        # Debug: Check if Status column exists
+        if 'Status' not in df.columns:
+            print(f"[ERROR] 'Status' column not found! Available columns: {df.columns.tolist()}")
+            return {
+                'Total Go Live': len(df),
+                'Completed': 0,
+                'WIP': 0,
+                'Not Configured': 0,
+            }
+
         kpis = {
             'Total Go Live': len(df),
             'Completed': len(df[df['Status'] == 'Completed']),
             'WIP': len(df[df['Status'] == 'WIP']),
             'Not Configured': len(df[df['Status'] == 'Not Configured']),
         }
-        
+
+        print(f"[DEBUG] KPI Counts: {kpis}")
+
         return kpis
     
     def get_lob_breakdown(self, status: str, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
