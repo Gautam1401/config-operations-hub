@@ -248,14 +248,24 @@ class IntegrationDataProcessor:
     def get_regions(self, df: pd.DataFrame) -> List[str]:
         """
         Get unique regions from data
-        
+
         Args:
             df: DataFrame
-            
+
         Returns:
             List of unique regions
         """
+        # Safety check: ensure Region column exists and has data
+        if 'Region' not in df.columns or df['Region'].dropna().empty:
+            print("[WARNING] No 'Region' column or all values missing!")
+            return ['Unknown']  # Return default region
+
         regions = sorted(df['Region'].dropna().unique().tolist())
+
+        # If no regions found, return default
+        if not regions:
+            return ['Unknown']
+
         print(f"[DEBUG Integration Processor] Regions: {regions}")
         return regions
     

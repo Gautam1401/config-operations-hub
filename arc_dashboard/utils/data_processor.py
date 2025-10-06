@@ -180,17 +180,28 @@ class ARCDataProcessor:
     def get_regions(self, df: Optional[pd.DataFrame] = None) -> List[str]:
         """
         Get unique regions from data
-        
+
         Args:
             df: DataFrame to get regions from (uses self.df if None)
-            
+
         Returns:
-            list: Sorted list of unique regions
+            list: Sorted list of unique regions with 'All' prepended
         """
         if df is None:
             df = self.df
-        
-        regions = sorted(df['Region'].unique().tolist())
+
+        # Safety check: ensure Region column exists and has data
+        if 'Region' not in df.columns or df['Region'].dropna().empty:
+            print("[WARNING] No 'Region' column or all values missing!")
+            return ['All', 'Unknown']  # Return default regions
+
+        # Get unique regions, excluding NaN values
+        regions = sorted(df['Region'].dropna().unique().tolist())
+
+        # If no regions found, return default
+        if not regions:
+            return ['All', 'Unknown']
+
         return ['All'] + regions
     
     def filter_by_status(self, status: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
