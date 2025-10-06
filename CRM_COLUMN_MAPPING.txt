@@ -1,0 +1,148 @@
+================================================================================
+CRM DASHBOARD - COLUMN MAPPING REFERENCE
+================================================================================
+
+Excel File: CRM Data.xlsx
+Sheets: Aug 2025, Sep 2025, Oct 2025 (one sheet per month)
+Total Columns: 23
+Total Rows: ~43 per sheet
+
+================================================================================
+COLUMN HEADERS FOUND IN EXCEL
+================================================================================
+
+ 1. 'Dealer ID'
+ 2. 'Dealer Name'
+ 3. 'Type of Implementation'
+ 4. 'Region'
+ 5. 'Configuration - Assigned'
+ 6. 'Go Live'
+ 7. 'Date of Completion'
+ 8. 'Configuration - User List'
+ 9. 'Configuration - BP'
+10. 'Configuration - Comments'
+11. 'Configuration - Status'
+12. 'Pre Go Live - Assigned to'
+13. 'Pre Go Live - Domain Updated'
+14. 'Pre Go Live - Set Up Check'
+15. 'Pre Go Live - Comments'
+16. 'Go Live Testing - Assigned To'
+17. 'Go Live Testing - Sample ADF'
+18. 'Go Live Testing - Inbound Email Test'
+19. 'Go Live Testing - Outbound Mail Test'
+20. 'Go Live Testing - Data Migration Test'
+21. 'Go Live Testing - Comments'
+22. 'Unnamed: 21' (IGNORE - empty column)
+23. 'Config team didn't work on the store' (IGNORE - notes column)
+
+================================================================================
+MAPPING: CRM DASHBOARD FIELD → EXCEL COLUMN
+================================================================================
+
+BASIC INFO:
+-----------
+Dealership Name              → 'Dealer Name' (Column 2)
+Dealer ID                    → 'Dealer ID' (Column 1)
+Type of Implementation       → 'Type of Implementation' (Column 3)
+Region                       → 'Region' (Column 4)
+Go Live Date                 → 'Go Live' (Column 6)
+Days to Go Live              → COMPUTED: Go Live Date - Today
+
+CONFIGURATION TAB:
+------------------
+Configuration - Assigned     → 'Configuration - Assigned' (Column 5)
+Configuration - Status       → 'Configuration - Status' (Column 11)
+Configuration - User List    → 'Configuration - User List' (Column 8)
+Configuration - BP           → 'Configuration - BP' (Column 9)
+Configuration - Comments     → 'Configuration - Comments' (Column 10)
+Date of Completion           → 'Date of Completion' (Column 7)
+
+PRE GO LIVE TAB:
+----------------
+Pre Go Live - Assigned       → 'Pre Go Live - Assigned to' (Column 12)
+Pre Go Live - Domain Updated → 'Pre Go Live - Domain Updated' (Column 13)
+Pre Go Live - Set Up Check   → 'Pre Go Live - Set Up Check' (Column 14)
+Pre Go Live - Comments       → 'Pre Go Live - Comments' (Column 15)
+
+GO LIVE TESTING TAB:
+--------------------
+Go Live Testing - Assigned   → 'Go Live Testing - Assigned To' (Column 16)
+Go Live Testing - Sample ADF → 'Go Live Testing - Sample ADF' (Column 17)
+Go Live Testing - Inbound    → 'Go Live Testing - Inbound Email Test' (Column 18)
+Go Live Testing - Outbound   → 'Go Live Testing - Outbound Mail Test' (Column 19)
+Go Live Testing - Data Mig   → 'Go Live Testing - Data Migration Test' (Column 20)
+Go Live Testing - Comments   → 'Go Live Testing - Comments' (Column 21)
+
+================================================================================
+BUSINESS LOGIC RULES
+================================================================================
+
+CONFIGURATION STATUS:
+---------------------
+- Standard      = Configuration - Status contains "Standard"
+- Copy          = Configuration - Status contains "Copy"
+- Implementation = Configuration - Status contains "Implementation"
+- Not Configured = Configuration - Status is blank/NA
+
+PRE GO LIVE STATUS:
+-------------------
+- Pass     = BOTH Domain Updated = "Yes" AND Set Up Check = "Yes"
+- Partial  = ONE of them = "Yes", other = "No"
+- Fail     = BOTH Domain Updated = "No" AND Set Up Check = "No"
+- Pending  = Any blank/NA values
+
+GO LIVE TESTING STATUS:
+-----------------------
+Tests: Sample ADF (40%), Inbound Email (12.5%), Outbound Mail (12.5%), Data Migration (35%)
+
+- GTG (Good to Go)       = ALL 4 tests = "Yes"
+- Go Live Blockers       = Sample ADF = "No" OR Data Migration = "No"
+- Non-Blockers           = Inbound Email = "No" OR Outbound Mail = "No"
+- Both Blocker & Non-Blocker = Can have BOTH simultaneously
+- Fail                   = ALL tests failed
+- Testing Completed      = Assigned To is NOT blank/NA
+- Exclude                = Future go-live dates (Go Live > Today)
+
+SCORE CALCULATION:
+------------------
+Start with 100%
+- Sample ADF = "No" → Deduct 40%
+- Inbound Email = "No" → Deduct 12.5%
+- Outbound Mail = "No" → Deduct 12.5%
+- Data Migration = "No" → Deduct 35%
+
+ESCALATION BUCKETS (Days to Go Live):
+--------------------------------------
+- Escalated  = < 25 days
+- Critical   = 25-45 days
+- On Track   = > 45 days
+
+EXCLUSIONS:
+-----------
+- "Not Configured" stores are OUT OF SCOPE for analytics
+- NA/blank test values should be EXCLUDED from status calculations
+- Future go-live dates should be EXCLUDED from Go Live Testing
+
+================================================================================
+QUICK REFERENCE - EXACT COLUMN NAMES TO USE IN CODE
+================================================================================
+
+df['Dealer ID']
+df['Dealer Name']
+df['Type of Implementation']
+df['Region']
+df['Configuration - Assigned']
+df['Go Live']
+df['Date of Completion']
+df['Configuration - Status']
+df['Pre Go Live - Assigned to']
+df['Pre Go Live - Domain Updated']
+df['Pre Go Live - Set Up Check']
+df['Go Live Testing - Assigned To']
+df['Go Live Testing - Sample ADF']
+df['Go Live Testing - Inbound Email Test']
+df['Go Live Testing - Outbound Mail Test']
+df['Go Live Testing - Data Migration Test']
+
+================================================================================
+

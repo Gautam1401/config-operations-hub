@@ -276,8 +276,8 @@ class CRMDataProcessor:
         if df is None:
             df = self.df
         
-        # Checks Completed = records where Pre Go Live Assignee is not blank
-        checks_completed = len(df[df['Pre Go Live Assignee'].notna() & (df['Pre Go Live Assignee'] != '')])
+        # Checks Completed = records where Pre Go Live Assigned is not blank
+        checks_completed = len(df[df['Pre Go Live Assigned'].notna() & (df['Pre Go Live Assigned'] != '')])
         
         kpis = {
             'Checks Completed': checks_completed,
@@ -295,10 +295,10 @@ class CRMDataProcessor:
         if df is None:
             df = self.df
         
-        # Tests Completed = records where Go Live Testing Assignee is not blank AND not future go-live
+        # Tests Completed = records where Go Live Testing Assigned is not blank AND not future go-live
         tests_completed = len(df[
-            (df['Go Live Testing Assignee'].notna()) & 
-            (df['Go Live Testing Assignee'] != '') &
+            (df['Go Live Testing Assigned'].notna()) &
+            (df['Go Live Testing Assigned'] != '') &
             (df['Days to Go Live'] <= 0)
         ])
         
@@ -361,9 +361,9 @@ class CRMDataProcessor:
         
         # Determine assignee column based on sub-tab
         assignee_col_map = {
-            'configuration': 'Configuration Assignee',
-            'pre_go_live': 'Pre Go Live Assignee',
-            'go_live_testing': 'Go Live Testing Assignee',
+            'configuration': 'Configuration Assigned',
+            'pre_go_live': 'Pre Go Live Assigned',
+            'go_live_testing': 'Go Live Testing Assigned',
         }
         
         status_col_map = {

@@ -293,8 +293,8 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
         
         if st.session_state.crm_selected_kpi == 'Checks Completed':
             checks_df = filtered_df[
-                (filtered_df['Pre Go Live Assignee'].notna()) & 
-                (filtered_df['Pre Go Live Assignee'] != '')
+                (filtered_df['Pre Go Live Assigned'].notna()) &
+                (filtered_df['Pre Go Live Assigned'] != '')
             ]
             region_counts = {region: len(checks_df[checks_df['Region'] == region]) 
                            for region in processor.get_regions(filtered_df)}
@@ -315,8 +315,8 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
             
             if st.session_state.crm_selected_kpi == 'Checks Completed':
                 region_filtered_df = region_filtered_df[
-                    (region_filtered_df['Pre Go Live Assignee'].notna()) & 
-                    (region_filtered_df['Pre Go Live Assignee'] != '')
+                    (region_filtered_df['Pre Go Live Assigned'].notna()) &
+                    (region_filtered_df['Pre Go Live Assigned'] != '')
                 ]
             else:
                 region_filtered_df = region_filtered_df[
