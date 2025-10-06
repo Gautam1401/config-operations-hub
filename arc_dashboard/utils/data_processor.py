@@ -95,7 +95,10 @@ class ARCDataProcessor:
     
     def get_kpi_counts(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
         """
-        Calculate KPI counts
+        Calculate KPI counts - COUNT BY MODULE (wide format)
+
+        Counts each module (Parts, Service, Accounting) separately
+        Total = sum of all module counts
 
         Args:
             df: DataFrame to calculate from (uses self.df if None)
@@ -106,71 +109,73 @@ class ARCDataProcessor:
         if df is None:
             df = self.df
 
-        # Debug: Check if Status column exists
-        if 'Status' not in df.columns:
-            print(f"[ERROR] 'Status' column not found! Available columns: {df.columns.tolist()}")
-            return {
-                'Total Go Live': len(df),
-                'Completed': 0,
-                'WIP': 0,
-                'Not Configured': 0,
-            }
+        # Count by MODULE (not by dealership)
+        # Each dealership has 3 modules: Parts, Service, Accounting
+
+        # Count Completed modules
+        parts_completed = (df['Parts Status'] == 'Completed').sum()
+        service_completed = (df['Service Status'] == 'Completed').sum()
+        accounting_completed = (df['Accounting Status'] == 'Completed').sum()
+        total_completed = parts_completed + service_completed + accounting_completed
+
+        # Count WIP modules
+        parts_wip = (df['Parts Status'] == 'WIP').sum()
+        service_wip = (df['Service Status'] == 'WIP').sum()
+        accounting_wip = (df['Accounting Status'] == 'WIP').sum()
+        total_wip = parts_wip + service_wip + accounting_wip
+
+        # Count Not Configured modules
+        parts_not_configured = (df['Parts Status'] == 'Not Configured').sum()
+        service_not_configured = (df['Service Status'] == 'Not Configured').sum()
+        accounting_not_configured = (df['Accounting Status'] == 'Not Configured').sum()
+        total_not_configured = parts_not_configured + service_not_configured + accounting_not_configured
+
+        # Total Go Live = number of dealerships (not modules)
+        total_go_live = len(df)
 
         kpis = {
-            'Total Go Live': len(df),
-            'Completed': len(df[df['Status'] == 'Completed']),
-            'WIP': len(df[df['Status'] == 'WIP']),
-            'Not Configured': len(df[df['Status'] == 'Not Configured']),
+            'Total Go Live': total_go_live,
+            'Completed': total_completed,
+            'WIP': total_wip,
+            'Not Configured': total_not_configured,
         }
 
-        print(f"[DEBUG] KPI Counts: {kpis}")
+        print(f"[DEBUG] KPI Counts (by module): {kpis}")
+        print(f"[DEBUG]   Parts: Completed={parts_completed}, WIP={parts_wip}, Not Configured={parts_not_configured}")
+        print(f"[DEBUG]   Service: Completed={service_completed}, WIP={service_wip}, Not Configured={service_not_configured}")
+        print(f"[DEBUG]   Accounting: Completed={accounting_completed}, WIP={accounting_wip}, Not Configured={accounting_not_configured}")
 
         return kpis
     
     def get_lob_breakdown(self, status: str, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
         """
-        Get breakdown by Module for a specific status
-        
+        Get breakdown by Module for a specific status (wide format)
+
         Args:
             status: Status to filter by ('Completed', 'WIP', or 'Not Configured')
             df: DataFrame to calculate from (uses self.df if None)
-            
+
         Returns:
             dict: Module breakdown counts
         """
         if df is None:
             df = self.df
-        
-        # IMPROVEMENT #4: Check for Module column
-        module_col = None
-        if 'Module' in df.columns:
-            module_col = 'Module'
-        elif 'Line of Business' in df.columns:
-            module_col = 'Line of Business'
-            print("[WARNING] Using 'Line of Business' column - should be renamed to 'Module'")
-        else:
-            print(f"[ERROR] Neither 'Module' nor 'Line of Business' column found in DataFrame!")
-            print(f"[ERROR] Available columns: {df.columns.tolist()}")
-            # Return empty breakdown
-            return {
-                'Service': 0,
-                'Parts': 0,
-                'Accounting': 0,
-                'Any': 0,
-            }
-        
-        filtered = df[df['Status'] == status]
-        
+
+        # Count each module separately (wide format)
+        parts_count = (df['Parts Status'] == status).sum()
+        service_count = (df['Service Status'] == status).sum()
+        accounting_count = (df['Accounting Status'] == status).sum()
+
         breakdown = {
-            'Service': len(filtered[filtered[module_col] == 'Service']),
-            'Parts': len(filtered[filtered[module_col] == 'Parts']),
-            'Accounting': len(filtered[filtered[module_col] == 'Accounting']),
-            'Any': len(filtered),  # Total for this status
+            'Parts': parts_count,
+            'Service': service_count,
+            'Accounting': accounting_count,
+            'Any': parts_count + service_count + accounting_count,  # Total for this status
         }
-        
+
         # DEBUG: Print breakdown
         print(f"[DEBUG DataProcessor] LOB Breakdown for {status}: {breakdown}")
-        
+
         return breakdown
     def get_regions(self, df: Optional[pd.DataFrame] = None) -> List[str]:
         """
@@ -190,35 +195,46 @@ class ARCDataProcessor:
     
     def filter_by_status(self, status: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
-        Filter data by status
-        
+        Filter data by status (wide format)
+        Returns dealerships where AT LEAST ONE module has the given status
+
         Args:
             status: Status to filter by
             df: DataFrame to filter (uses self.df if None)
-            
+
         Returns:
-            pd.DataFrame: Filtered data
+            pd.DataFrame: Filtered data (dealerships with at least one module matching status)
         """
         if df is None:
             df = self.df
-        
-        return df[df['Status'] == status].copy()
-    
+
+        # Filter dealerships where at least one module has this status
+        mask = ((df['Parts Status'] == status) |
+                (df['Service Status'] == status) |
+                (df['Accounting Status'] == status))
+
+        return df[mask].copy()
+
     def filter_by_lob(self, lob: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
-        Filter data by Line of Business
-        
+        Filter data by Line of Business (Module) - wide format
+        Returns dealerships with the specified module column
+
         Args:
-            lob: LOB to filter by
+            lob: LOB to filter by ('Parts', 'Service', or 'Accounting')
             df: DataFrame to filter (uses self.df if None)
-            
+
         Returns:
-            pd.DataFrame: Filtered data
+            pd.DataFrame: Filtered data with only the specified module status
         """
         if df is None:
             df = self.df
-        
-        return df[df['Module'] == lob].copy()
+
+        # For wide format, we can't really "filter" by LOB
+        # Instead, we return the full dataframe but could add a column indicating which module
+        # For now, just return the full dataframe
+        # The UI will need to handle showing specific module columns
+        return df.copy()
     
     def filter_by_region(self, region: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """

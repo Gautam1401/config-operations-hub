@@ -11,18 +11,22 @@ from pathlib import Path
 def load_arc_data_from_excel():
     """
     Load ARC Configuration data from Excel file
-    Combines all month sheets and transforms to long format (one row per module)
+    ONE ROW PER DEALERSHIP (wide format)
 
     Returns:
-        pd.DataFrame: ARC configuration data in long format with columns:
+        pd.DataFrame: ARC configuration data with columns:
                      - Dealership Name
                      - Go Live Date
+                     - Days to Go Live
                      - Type of Implementation
                      - Assigned To
                      - Region
-                     - Module (Parts/Service/Accounting)
-                     - Status (Completed/WIP/Not Configured)
+                     - Parts Status
+                     - Service Status
+                     - Accounting Status
     """
+    from datetime import datetime
+
     # Get the project root directory
     project_root = Path(__file__).parent.parent.parent
     excel_path = project_root / "data" / "ARC Configuration.xlsx"
@@ -44,91 +48,103 @@ def load_arc_data_from_excel():
     # Standardize column names
     df.columns = df.columns.str.strip()
 
-    # Keep only necessary columns
-    base_columns = ['Dealership', 'Go Live Date', 'Type of Implementation', 'Assignee', 'Region']
-    module_columns = ['Parts', 'Service', 'Accounting']
-
-    # Create long format - one row per module
-    long_format_data = []
-
-    for _, row in df.iterrows():
-        # Base information for this dealership
-        base_info = {
-            'Dealership Name': row.get('Dealership', ''),
-            'Go Live Date': row.get('Go Live Date', ''),
-            'Type of Implementation': row.get('Type of Implementation', ''),
-            'Assigned To': row.get('Assignee', ''),
-            'Region': row.get('Region', '')
-        }
-
-        # Create 3 rows - one for each module
-        for module in module_columns:
-            module_row = base_info.copy()
-            module_row['Module'] = module
-            module_row['Status'] = row.get(module, 'Not Configured')
-            long_format_data.append(module_row)
-
-    # Create final dataframe
-    df_long = pd.DataFrame(long_format_data)
-
-    # ========================================================================
-    # DATA STANDARDIZATION - Clean up inconsistent values
-    # ========================================================================
-
-    # 1. Clean up Status values
-    df_long['Status'] = df_long['Status'].fillna('Not Configured')
-    df_long['Status'] = df_long['Status'].astype(str).str.strip()
-
-    # Standardize status values (case-insensitive)
-    status_mapping = {
-        'completed': 'Completed',
-        'complete': 'Completed',
-        'done': 'Completed',
-        'wip': 'WIP',
-        'in progress': 'WIP',
-        'not configured': 'Not Configured',
-        'not started': 'Not Configured',
-        'na': 'Not Configured',
-        'n/a': 'Not Configured',
-        '': 'Not Configured',
-        'nan': 'Not Configured'
+    # Column mapping
+    column_mapping = {
+        'Dealership': 'Dealership Name',
+        'Assignee': 'Assigned To',
+        'Go Live Date': 'Go Live Date',
+        'Type of Implementation': 'Type of Implementation',
+        'Region': 'Region',
+        'Parts': 'Parts Status',
+        'Service': 'Service Status',
+        'Accounting': 'Accounting Status'
     }
 
-    df_long['Status'] = df_long['Status'].str.lower().replace(status_mapping)
+    # Rename columns
+    df.rename(columns=column_mapping, inplace=True)
 
-    # 2. Standardize Region values (case-insensitive, trim spaces)
-    df_long['Region'] = df_long['Region'].fillna('Unknown')
-    df_long['Region'] = df_long['Region'].astype(str).str.strip()
+    # Convert Go Live Date to datetime
+    df['Go Live Date'] = pd.to_datetime(df['Go Live Date'], errors='coerce')
 
-    # Region mapping - consolidate variations
+    # Calculate Days to Go Live
+    today = pd.Timestamp(datetime.now().date())
+    df['Days to Go Live'] = (df['Go Live Date'] - today).dt.days
+
+    # Determine if Rolled Out (Days to Go Live < 0)
+    df['Is Rolled Out'] = df['Days to Go Live'] < 0
+
+    # ========================================================================
+    # MODULE STATUS LOGIC
+    # ========================================================================
+    # For each module (Parts, Service, Accounting):
+    # - If blank AND Rolled Out → "Not Configured"
+    # - If blank AND NOT Rolled Out → Keep blank (None - don't count)
+    # - If not blank → Standardize value (Completed/WIP/Not Configured)
+
+    def process_module_status(status, is_rolled_out):
+        """Process module status based on blank and rolled out logic"""
+        # Convert to string and clean
+        status_str = str(status).strip() if pd.notna(status) else ''
+
+        # If blank
+        if status_str == '' or status_str.lower() in ['nan', 'none', 'n/a', 'na']:
+            if is_rolled_out:
+                return 'Not Configured'
+            else:
+                return None  # Don't count
+
+        # Standardize status values (case-insensitive)
+        status_lower = status_str.lower()
+        if status_lower in ['completed', 'complete', 'done']:
+            return 'Completed'
+        elif status_lower in ['wip', 'in progress', 'work in progress']:
+            return 'WIP'
+        elif status_lower in ['not configured', 'not started', 'pending']:
+            return 'Not Configured'
+        else:
+            return status_str  # Keep original if unknown
+
+    # Apply module status logic to each module column
+    df['Parts Status'] = df.apply(lambda row: process_module_status(row['Parts Status'], row['Is Rolled Out']), axis=1)
+    df['Service Status'] = df.apply(lambda row: process_module_status(row['Service Status'], row['Is Rolled Out']), axis=1)
+    df['Accounting Status'] = df.apply(lambda row: process_module_status(row['Accounting Status'], row['Is Rolled Out']), axis=1)
+
+    # ========================================================================
+    # DATA STANDARDIZATION - Clean up other fields
+    # ========================================================================
+
+    # Clean up Region values
+    df['Region'] = df['Region'].fillna('Unknown')
+    df['Region'] = df['Region'].astype(str).str.strip()
+
+    # Standardize region values (case-insensitive)
     region_mapping = {
         'canada': 'Canada',
         'canda': 'Canada',  # Fix typo
+        'can': 'Canada',
         'usa east': 'USA East',
+        'east': 'USA East',
         'usa west': 'USA West',
+        'west': 'USA West',
         'usa west and central': 'USA West and Central',
+        'west and central': 'USA West and Central',
         'mid market': 'Mid Market',
+        'midmarket': 'Mid Market',
         'enterprise': 'Enterprise',
+        'ent': 'Enterprise',
         'united kingdom': 'United Kingdom',
         'uk': 'United Kingdom',
-        'nam': 'NAM',
-        'north america': 'NAM',
-        'emea': 'EMEA',
-        'europe': 'EMEA',
-        'apac': 'APAC',
-        'asia pacific': 'APAC',
-        'latam': 'LATAM',
-        'latin america': 'LATAM'
+        'unknown': 'Unknown',
+        'nan': 'Unknown',
+        'none': 'Unknown',
+        '': 'Unknown'
     }
 
-    df_long['Region'] = df_long['Region'].str.lower().replace(region_mapping)
+    df['Region'] = df['Region'].str.lower().replace(region_mapping)
 
-    # 3. Standardize Module values (should already be correct, but just in case)
-    df_long['Module'] = df_long['Module'].str.strip()
-
-    # 4. Standardize Type of Implementation
-    df_long['Type of Implementation'] = df_long['Type of Implementation'].fillna('Unknown')
-    df_long['Type of Implementation'] = df_long['Type of Implementation'].astype(str).str.strip()
+    # Clean up Type of Implementation
+    df['Type of Implementation'] = df['Type of Implementation'].fillna('Unknown')
+    df['Type of Implementation'] = df['Type of Implementation'].astype(str).str.strip()
 
     impl_type_mapping = {
         'new point': 'New Point',
@@ -141,18 +157,36 @@ def load_arc_data_from_excel():
         'upgrade': 'Upgrade'
     }
 
-    df_long['Type of Implementation'] = df_long['Type of Implementation'].str.lower().replace(impl_type_mapping)
+    df['Type of Implementation'] = df['Type of Implementation'].str.lower().replace(impl_type_mapping)
 
-    # 5. Clean up Dealership Name and Assigned To
-    df_long['Dealership Name'] = df_long['Dealership Name'].astype(str).str.strip()
-    df_long['Assigned To'] = df_long['Assigned To'].fillna('Unassigned')
-    df_long['Assigned To'] = df_long['Assigned To'].astype(str).str.strip()
+    # Clean up Dealership Name and Assigned To
+    df['Dealership Name'] = df['Dealership Name'].fillna('Unknown')
+    df['Dealership Name'] = df['Dealership Name'].astype(str).str.strip()
+    df['Assigned To'] = df['Assigned To'].fillna('Unassigned')
+    df['Assigned To'] = df['Assigned To'].astype(str).str.strip()
+
+    # Keep only necessary columns
+    final_columns = [
+        'Dealership Name',
+        'Go Live Date',
+        'Days to Go Live',
+        'Type of Implementation',
+        'Assigned To',
+        'Region',
+        'Parts Status',
+        'Service Status',
+        'Accounting Status',
+        'Is Rolled Out'
+    ]
+
+    df = df[final_columns]
 
     print(f"[DEBUG ARC Loader] Loaded {len(df)} dealerships from {len(xl.sheet_names)} sheets")
-    print(f"[DEBUG ARC Loader] Transformed to {len(df_long)} rows (long format)")
-    print(f"[DEBUG ARC Loader] Columns: {df_long.columns.tolist()}")
-    print(f"[DEBUG ARC Loader] Unique Regions: {df_long['Region'].unique().tolist()}")
-    print(f"[DEBUG ARC Loader] Unique Statuses: {df_long['Status'].unique().tolist()}")
+    print(f"[DEBUG ARC Loader] ONE ROW PER DEALERSHIP (wide format)")
+    print(f"[DEBUG ARC Loader] Columns: {df.columns.tolist()}")
+    print(f"[DEBUG ARC Loader] Unique Regions: {df['Region'].unique().tolist()}")
+    print(f"[DEBUG ARC Loader] Sample data:")
+    print(df[['Dealership Name', 'Parts Status', 'Service Status', 'Accounting Status', 'Is Rolled Out']].head(5))
 
-    return df_long
+    return df
 
