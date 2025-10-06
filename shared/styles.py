@@ -299,18 +299,34 @@ def apply_modern_styles():
 
 def render_modern_header(title: str, icon_url: str = "https://img.icons8.com/?size=512&id=w12qCfGNQTGx&format=png"):
     """
-    Render modern header with icon - Black Theme
+    Render modern header with icon and last refresh timestamp - Black Theme
     
     Args:
         title: Dashboard title
         icon_url: URL to icon image
     """
-    st.markdown(f"""
-        <h1 style='display: flex; align-items: center; gap: 14px; margin-bottom:2px; color: #F5F5F7 !important;'>
-            <img src="{icon_url}" height="38" alt="">
-            {title}
-        </h1>
-    """, unsafe_allow_html=True)
+    from datetime import datetime
+    
+    # Get current timestamp
+    current_time = datetime.now().strftime("%d-%b-%Y %I:%M:%S %p")
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.markdown(f"""
+            <h1 style='display: flex; align-items: center; gap: 14px; margin-bottom:2px; color: #F5F5F7 !important;'>
+                <img src="{icon_url}" height="38" alt="">
+                {title}
+            </h1>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+            <div style='text-align: right; padding-top: 8px;'>
+                <span style='color: #86868B; font-size: 13px;'>🔄 Last Refreshed</span><br>
+                <span style='color: #F5F5F7; font-size: 14px; font-weight: 500;'>{current_time}</span>
+            </div>
+        """, unsafe_allow_html=True)
     
     st.write("---")
 
