@@ -57,23 +57,25 @@ except:
 # ============================================================================
 
 def initialize_session_state():
-    """Initialize session state variables"""
+    """Initialize session state variables - NEW FLOW: Module → KPI → Region → Table"""
+    if 'selected_module' not in st.session_state:
+        st.session_state.selected_module = None  # NEW: Module selection (Parts/Service/Accounting)
     if 'selected_kpi' not in st.session_state:
         st.session_state.selected_kpi = None
     if 'selected_region' not in st.session_state:
         st.session_state.selected_region = None
     if 'selected_lob' not in st.session_state:
-        st.session_state.selected_lob = None
+        st.session_state.selected_lob = None  # Keep for backward compatibility
     if 'date_filter' not in st.session_state:
         st.session_state.date_filter = 'current_month'
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
-    
+
     # DEBUG: Print session state during development
     if USE_MOCK_DATA:
-        print(f"[DEBUG] Session State: KPI={st.session_state.selected_kpi}, "
-              f"Region={st.session_state.selected_region}, "
-              f"LOB={st.session_state.selected_lob}")
+        print(f"[DEBUG] Session State: Module={st.session_state.selected_module}, "
+              f"KPI={st.session_state.selected_kpi}, "
+              f"Region={st.session_state.selected_region}")
 
 
 # ============================================================================
@@ -127,32 +129,44 @@ def load_data(use_mock: bool = False):
 # CALLBACK FUNCTIONS
 # ============================================================================
 
+def on_module_click(module_name: str):
+    """
+    Handle Module card click (NEW FLOW - Level 1)
+    Reset KPI and Region when clicking new module
+    """
+    if st.session_state.selected_module != module_name:
+        st.session_state.selected_module = module_name
+        st.session_state.selected_kpi = None  # Reset KPI
+        st.session_state.selected_region = None  # Reset region
+        print(f"[DEBUG] Module clicked: {module_name}, reset KPI and region")
+
+
 def on_kpi_click(kpi_name: str):
     """
-    Handle KPI card click
-    IMPROVEMENT #3 & #4: Reset region and LOB when clicking new KPI
+    Handle KPI card click (NEW FLOW - Level 2)
+    Reset region when clicking new KPI
     """
     if st.session_state.selected_kpi != kpi_name:
         st.session_state.selected_kpi = kpi_name
         st.session_state.selected_region = None  # Reset region
-        st.session_state.selected_lob = None  # Reset LOB
-        print(f"[DEBUG] KPI clicked: {kpi_name}, reset region and LOB")
+        print(f"[DEBUG] KPI clicked: {kpi_name}, reset region")
 
 
 def on_region_click(region: str):
-    """Handle region banner click"""
+    """Handle region banner click (NEW FLOW - Level 3)"""
     st.session_state.selected_region = region
     print(f"[DEBUG] Region clicked: {region}")
 
 
 def on_breakdown_click(category: str):
-    """Handle breakdown card click"""
+    """Handle breakdown card click (kept for compatibility)"""
     st.session_state.selected_lob = category
     print(f"[DEBUG] LOB clicked: {category}")
 
 
 def reset_filters():
     """Reset all filters"""
+    st.session_state.selected_module = None
     st.session_state.selected_kpi = None
     st.session_state.selected_region = None
     st.session_state.selected_lob = None
@@ -320,22 +334,46 @@ def render_lob_cards_arc(lob_counts: dict):
                 st.rerun()
 
 
+def render_module_cards_arc():
+    """Render Module selection cards (NEW FLOW - Level 1)"""
+    st.markdown("### 📦 Select Module")
+
+    modules = ['Parts', 'Service', 'Accounting']
+
+    # Build module cards HTML
+    cards_html = '<div class="kpi-row">'
+
+    for module in modules:
+        selected_class = 'selected' if module == st.session_state.selected_module else ''
+        cards_html += f'<div class="kpi-card kpi-accent {selected_class}">📦<br /><span style="font-size:0.7em;">{module}</span></div>'
+
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
+
+    # Handle button clicks
+    cols = st.columns(len(modules))
+    for idx, module in enumerate(modules):
+        with cols[idx]:
+            if st.button(f"{module}", key=f"arc_module_btn_{module}"):
+                on_module_click(module)
+                st.rerun()
+
+
 def render_data_tab(processor: ARCDataProcessor):
     """
-    Render the Data tab with interactive drill-down
-    IMPROVEMENT #3: Table only shows when both KPI and region selected
-    IMPROVEMENT #6: Module breakdown only after region selected
+    Render the Data tab with NEW interactive drill-down flow
+    NEW FLOW: Module → KPI → Region → Table
     """
-    
+
     # Month Filter at the top
     st.markdown("### 📅 Select Month")
-    
+
     today = pd.Timestamp.today().normalize()
     current_month_str = today.strftime("%B %Y")
     next_month_dt = today + pd.DateOffset(months=1)
     next_month_str = next_month_dt.strftime("%B %Y")
     ytd_str = "YTD (Year to Date)"
-    
+
     month_option = st.radio(
         "Select Month",
         [current_month_str, next_month_str, ytd_str],
@@ -344,7 +382,7 @@ def render_data_tab(processor: ARCDataProcessor):
         key="arc_month_filter",
         label_visibility="collapsed"
     )
-    
+
     # Map selection to filter type
     if month_option == current_month_str:
         st.session_state.date_filter = 'current_month'
@@ -352,102 +390,123 @@ def render_data_tab(processor: ARCDataProcessor):
         st.session_state.date_filter = 'next_month'
     else:  # YTD
         st.session_state.date_filter = 'ytd'
-    
+
     st.markdown("---")
-    
+
     # Apply date filter
     filtered_df = processor.filter_by_date_range(st.session_state.date_filter)
-    
-    # Get KPIs for filtered data
-    kpis = processor.get_kpi_counts(filtered_df)
-    
-    # Render top-level KPI cards
-    st.subheader("📈 Key Performance Indicators")
-    render_kpi_cards_arc(kpis)
-    
+
+    # ========================================================================
+    # LEVEL 1: MODULE SELECTION (Parts / Service / Accounting)
+    # ========================================================================
+    render_module_cards_arc()
+
     st.divider()
-    
-    # Show selected KPI
-    if st.session_state.selected_kpi:
-        st.info(f"📌 Selected: **{st.session_state.selected_kpi}**")
-        
-        # Filter data based on selected KPI
-        if st.session_state.selected_kpi == 'Total Go Live':
-            kpi_filtered_df = filtered_df
-        elif st.session_state.selected_kpi in ['Completed', 'WIP', 'Not Configured']:
-            kpi_filtered_df = processor.filter_by_status(
-                st.session_state.selected_kpi,
-                filtered_df
-            )
-        else:
-            kpi_filtered_df = filtered_df
-    else:
-        # No KPI selected, use all filtered data
-        kpi_filtered_df = filtered_df
-    
-    # Show region cards (always visible after KPI selection or for all data)
-    regions = processor.get_regions(kpi_filtered_df)
-    
-    # Calculate region counts
-    region_counts = {}
-    for region in regions:
-        if region == "All":
-            region_counts[region] = len(kpi_filtered_df)
-        else:
-            region_counts[region] = len(kpi_filtered_df[kpi_filtered_df["Region"] == region])
-    
-    render_region_banners(
-        regions,
-        st.session_state.selected_region,
-        on_click=on_region_click,
-        counts=region_counts
-    )
-    
-    st.divider()
-    
-    # IMPROVEMENT #3 & #6: Show table and module breakdown ONLY when region is selected
-    if st.session_state.selected_region:
-        region_filtered_df = processor.filter_by_region(
-            st.session_state.selected_region,
-            kpi_filtered_df
-        )
-        
-        # IMPROVEMENT #6: Show module breakdown ONLY after region is selected
-        if st.session_state.selected_kpi and st.session_state.selected_kpi in ['Completed', 'WIP', 'Not Configured']:
-            st.subheader(f"🔍 {st.session_state.selected_kpi} by Module - {st.session_state.selected_region}")
-            breakdown = processor.get_lob_breakdown(
-                st.session_state.selected_kpi,
-                region_filtered_df
-            )
-            render_breakdown_cards(
-                breakdown,
-                KPI_COLORS,
-                f"{st.session_state.selected_kpi} by Module",
-                on_click=on_breakdown_click
-            )
-            
-            st.divider()
-        
-        # Apply LOB filter if selected
-        if st.session_state.selected_lob and st.session_state.selected_lob != 'Any':
-            region_filtered_df = processor.filter_by_lob(
-                st.session_state.selected_lob,
-                region_filtered_df
-            )
-        
-        # Get display dataframe
-        display_df = processor.get_display_dataframe(region_filtered_df)
-        
-        # Render table
-        render_data_table(
-            display_df,
-            title=f"Data: {st.session_state.selected_region}",
-            show_export=True
-        )
-    else:
-        # No region selected - show instruction
+
+    # ========================================================================
+    # LEVEL 2: KPI SELECTION (only show if module selected)
+    # ========================================================================
+    if st.session_state.selected_module:
+        st.info(f"📌 Selected Module: **{st.session_state.selected_module}**")
+
+        # Filter data by selected module
+        module_col = f"{st.session_state.selected_module} Status"
+        module_filtered_df = filtered_df.copy()
+
+        # Calculate KPIs for this module only
+        module_kpis = {
+            'Total Go Live': len(module_filtered_df),
+            'Completed': (module_filtered_df[module_col] == 'Completed').sum(),
+            'WIP': (module_filtered_df[module_col] == 'WIP').sum(),
+            'Not Configured': (module_filtered_df[module_col] == 'Not Configured').sum(),
+        }
+
+        st.markdown(f"### 📈 {st.session_state.selected_module} KPIs")
+        render_kpi_cards_arc(module_kpis)
+
+        st.divider()
+
+        # ========================================================================
+        # LEVEL 3: REGION SELECTION (only show if KPI selected)
+        # ========================================================================
         if st.session_state.selected_kpi:
-            st.info("👆 Click a region banner above to view detailed data")
+            st.info(f"📌 Selected KPI: **{st.session_state.selected_kpi}**")
+
+            # Filter data based on selected KPI for this module
+            if st.session_state.selected_kpi == 'Total Go Live':
+                kpi_filtered_df = module_filtered_df
+            elif st.session_state.selected_kpi in ['Completed', 'WIP', 'Not Configured']:
+                # Filter by module status
+                kpi_filtered_df = module_filtered_df[
+                    module_filtered_df[module_col] == st.session_state.selected_kpi
+                ]
+            else:
+                kpi_filtered_df = module_filtered_df
+
+            # Show region cards
+            regions = processor.get_regions(kpi_filtered_df)
+
+            # Calculate region counts
+            region_counts = {}
+            for region in regions:
+                if region == "All":
+                    region_counts[region] = len(kpi_filtered_df)
+                else:
+                    region_counts[region] = len(kpi_filtered_df[kpi_filtered_df["Region"] == region])
+
+            st.markdown("### 🌍 Select Region")
+            render_region_banners(
+                regions,
+                st.session_state.selected_region,
+                on_click=on_region_click,
+                counts=region_counts
+            )
+
+            st.divider()
+
+            # ========================================================================
+            # LEVEL 4: TABLE (only show if region selected)
+            # ========================================================================
+            if st.session_state.selected_region:
+                # Filter by region
+                if st.session_state.selected_region == "All":
+                    region_filtered_df = kpi_filtered_df
+                else:
+                    region_filtered_df = kpi_filtered_df[
+                        kpi_filtered_df["Region"] == st.session_state.selected_region
+                    ]
+
+                # Prepare display dataframe
+                display_df = region_filtered_df[[
+                    'Dealership Name',
+                    'Go Live Date',
+                    'Days to Go Live',
+                    'Type of Implementation',
+                    'Assigned To',
+                    'Region',
+                    module_col
+                ]].copy()
+
+                # Rename module status column for clarity
+                display_df.rename(columns={module_col: 'Status'}, inplace=True)
+
+                # Render table
+                st.markdown(f"### 📊 Data Table")
+                st.caption(f"{st.session_state.selected_module} - {st.session_state.selected_kpi} - {st.session_state.selected_region}")
+                render_data_table(
+                    display_df,
+                    title=f"{st.session_state.selected_module} - {st.session_state.selected_kpi} - {st.session_state.selected_region}",
+                    show_export=True
+                )
+            else:
+                # No region selected
+                st.info("👆 Click a region banner above to view detailed data")
+        else:
+            # No KPI selected
+            st.info("👆 Click a KPI card above to continue")
+    else:
+        # No module selected
+        st.info("👆 Click a module card above to begin")
 
 
 def render_analytics_tab():
