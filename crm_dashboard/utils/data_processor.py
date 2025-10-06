@@ -7,7 +7,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from crm_dashboard.config.settings import UPCOMING_WEEK_DAYS
-from shared.column_utils import find_column, has_column
 
 
 class CRMDataProcessor:
@@ -31,29 +30,24 @@ class CRMDataProcessor:
         # Clean column names
         self.df.columns = self.df.columns.str.strip()
 
-        # Use fuzzy column matching
-        go_live_col = find_column(self.df, 'Go Live Date')
-        dealer_name_col = find_column(self.df, 'Dealer Name')
-        dealer_id_col = find_column(self.df, 'Dealer ID')
-
-        # Convert Go Live Date to datetime
-        self.df[go_live_col] = pd.to_datetime(self.df[go_live_col], errors='coerce')
-
-        # Standardize to 'Go Live Date' column name
-        if go_live_col != 'Go Live Date':
-            self.df.rename(columns={go_live_col: 'Go Live Date'}, inplace=True)
+        # Convert Go Live Date to datetime (column already named 'Go Live Date' from loader)
+        if 'Go Live Date' in self.df.columns:
+            self.df['Go Live Date'] = pd.to_datetime(self.df['Go Live Date'], errors='coerce')
+        else:
+            raise KeyError(f"'Go Live Date' column not found! Available columns: {self.df.columns.tolist()}")
 
         # Calculate Days to Go Live
         today = pd.Timestamp(datetime.now().date())
         self.df['Days to Go Live'] = (self.df['Go Live Date'] - today).dt.days
 
         # Create Dealership Name (Dealer Name + Dealer ID)
-        if has_column(self.df, 'Dealership Name'):
-            # Already exists, don't overwrite
-            pass
-        else:
+        if 'Dealership Name' not in self.df.columns:
             # Create from Dealer Name + Dealer ID
-            self.df['Dealership Name'] = self.df[dealer_name_col].astype(str) + ' (' + self.df[dealer_id_col].astype(str) + ')'
+            if 'Dealer Name' in self.df.columns and 'Dealer ID' in self.df.columns:
+                self.df['Dealership Name'] = self.df['Dealer Name'].astype(str) + ' (' + self.df['Dealer ID'].astype(str) + ')'
+            else:
+                print(f"[WARNING] Cannot create 'Dealership Name' - missing 'Dealer Name' or 'Dealer ID' columns")
+                self.df['Dealership Name'] = 'Unknown'
         
         # Add Month and Year columns for filtering
         self.df['Month'] = self.df['Go Live Date'].dt.month
