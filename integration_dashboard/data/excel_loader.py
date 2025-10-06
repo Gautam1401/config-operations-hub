@@ -31,21 +31,15 @@ def load_integration_data_from_excel():
     print(f"[DEBUG Integration Loader] Loaded {len(df)} rows")
     print(f"[DEBUG Integration Loader] Columns: {df.columns.tolist()}")
 
-    # Map to expected column names
+    # Map to expected column names (keep Dealer Name for data processor)
     column_mapping = {
-        'Dealer Name': 'Dealership Name',
-        'Dealer ID': 'Dealer ID',
-        'Go Live Date': 'Go Live Date',
-        'Days to Go Live': 'Days to Go Live',
-        'PEM': 'PEM',
-        'Director': 'Director',
-        'Type of Implementation': 'Type of Implementation',
-        'Region': 'Region',
         'Assigned to': 'Assigned To',
         'Vendor List Updated': 'Vendor List Updated'
     }
 
     df.rename(columns=column_mapping, inplace=True)
+
+    # Keep 'Dealer Name' and 'Dealer ID' for the data processor to combine later
 
     # Standardize text values
     for col in df.columns:

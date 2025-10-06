@@ -31,18 +31,8 @@ def load_regression_data_from_excel():
     print(f"[DEBUG Regression Loader] Loaded {len(df)} rows")
     print(f"[DEBUG Regression Loader] Columns: {df.columns.tolist()}")
 
-    # Map to expected column names
-    column_mapping = {
-        'Dealership Name': 'Dealership Name',
-        'Go-Live Date': 'Go Live Date',
-        'Region': 'Region',
-        'Type of Implementation': 'Type of Implementation',
-        'SIM Start Date': 'SIM Start Date',
-        'Assignee': 'Assigned To',
-        'Testing Status': 'Status'
-    }
-
-    df.rename(columns=column_mapping, inplace=True)
+    # Don't rename columns - data processor handles column mapping
+    # Just keep original column names from Excel
 
     # Standardize text values
     for col in df.columns:

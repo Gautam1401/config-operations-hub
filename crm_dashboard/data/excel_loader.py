@@ -43,13 +43,9 @@ def load_crm_data_from_excel():
     print(f"[DEBUG CRM Loader] Combined data: {len(df)} rows")
     print(f"[DEBUG CRM Loader] Columns: {df.columns.tolist()}")
 
-    # Map to expected column names
+    # Map to expected column names (keep Dealer Name for data processor)
     column_mapping = {
-        'Dealer Name': 'Dealership Name',
-        'Dealer ID': 'Dealer ID',
         'Go Live': 'Go Live Date',
-        'Region': 'Region',
-        'Type of Implementation': 'Type of Implementation',
         'Configuration - Status': 'Configuration Status',
         'Configuration - Assigned': 'Configuration Assigned',
         'Pre Go Live - Assigned to': 'Pre Go Live Assigned',
@@ -63,6 +59,8 @@ def load_crm_data_from_excel():
     }
 
     df.rename(columns=column_mapping, inplace=True)
+
+    # Keep both 'Dealer Name' and 'Dealer ID' for the data processor to combine later
 
     # Standardize values (case-insensitive, trim spaces)
     for col in df.columns:
