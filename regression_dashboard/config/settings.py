@@ -7,8 +7,8 @@ DASHBOARD_TITLE = "Regression Testing Dashboard"
 DASHBOARD_ICON = "🧪"
 
 # Data source settings
-USE_MOCK_DATA = True  # Set to False when connecting to SharePoint
-SHAREPOINT_FILE_PATH = "E2E Testing Check.xlsx"
+USE_MOCK_DATA = False  # Set to True for mock data, False for real Excel data
+EXCEL_FILE_PATH = "data/E2E Testing Check.xlsx"
 SHEET_NAME = "Stores Checklist"
 
 # Date filter options (sub-tabs)

@@ -91,19 +91,25 @@ def generate_mock_integration_data(num_records: int = 100) -> pd.DataFrame:
 
 def load_integration_data() -> pd.DataFrame:
     """
-    Load integration data from source (mock or SharePoint)
-    
+    Load integration data from Excel file or mock data
+
     Returns:
         DataFrame with integration data
     """
-    
+
     from integration_dashboard.config.settings import USE_MOCK_DATA
-    
+    from integration_dashboard.data.excel_loader import load_integration_data_from_excel
+
     if USE_MOCK_DATA:
         print("[DEBUG Integration] Loading mock data...")
         return generate_mock_integration_data()
     else:
-        # TODO: Implement SharePoint data loading
-        print("[DEBUG Integration] SharePoint loading not yet implemented, using mock data")
-        return generate_mock_integration_data()
+        # Load from Excel file
+        try:
+            print("[INFO Integration] Loading data from Excel file...")
+            return load_integration_data_from_excel()
+        except Exception as e:
+            print(f"[ERROR Integration] Failed to load Excel file: {e}")
+            print("[INFO Integration] Using mock data instead.")
+            return generate_mock_integration_data()
 

@@ -110,7 +110,7 @@ DATE_FILTERS = {
 # MOCK DATA SETTINGS
 # ============================================================================
 
-USE_MOCK_DATA = True  # Set to False when SharePoint is configured
+USE_MOCK_DATA = False  # Set to True for mock data, False for real Excel data
 MOCK_DATA_ROWS = 100  # Number of mock records to generate
 
 # ============================================================================

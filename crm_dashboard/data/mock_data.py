@@ -109,18 +109,24 @@ def generate_mock_crm_data(num_rows: int = MOCK_DATA_ROWS) -> pd.DataFrame:
 
 def load_crm_data() -> pd.DataFrame:
     """
-    Load CRM data from source (mock or SharePoint)
-    
+    Load CRM data from Excel file or mock data
+
     Returns:
         pd.DataFrame: CRM configuration data
     """
     from crm_dashboard.config.settings import USE_MOCK_DATA
-    
+    from crm_dashboard.data.excel_loader import load_crm_data_from_excel
+
     if USE_MOCK_DATA:
         print("[DEBUG] Loading mock CRM data...")
         return generate_mock_crm_data()
     else:
-        # TODO: Implement SharePoint data loading
-        print("[INFO] SharePoint integration not yet implemented. Using mock data.")
-        return generate_mock_crm_data()
+        # Load from Excel file
+        try:
+            print("[INFO] Loading CRM data from Excel file...")
+            return load_crm_data_from_excel()
+        except Exception as e:
+            print(f"[ERROR] Failed to load Excel file: {e}")
+            print("[INFO] Using mock data instead.")
+            return generate_mock_crm_data()
 

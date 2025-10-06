@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from regression_dashboard.config.settings import *
 from regression_dashboard.data.mock_data import generate_mock_data
+from regression_dashboard.data.excel_loader import load_regression_data_from_excel
 from regression_dashboard.utils.data_processor import RegressionDataProcessor
 from shared.styles import apply_modern_styles
 
@@ -38,23 +39,34 @@ def initialize_session_state():
 # ============================================================================
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data(use_mock: bool = True):
+def load_data(use_mock: bool = False):
     """
-    Load data from SharePoint or mock data
-    
+    Load data from Excel file (Stores Checklist sheet) or mock data
+
     Args:
-        use_mock: Whether to use mock data
-        
+        use_mock: Whether to use mock data (default: False - use real Excel data)
+
     Returns:
         RegressionDataProcessor: Data processor instance with loaded data
     """
     if use_mock:
         df = generate_mock_data(MOCK_DATA_ROWS)
     else:
-        # TODO: Load from SharePoint
-        st.error("SharePoint integration not yet implemented. Using mock data.")
-        df = generate_mock_data(MOCK_DATA_ROWS)
-    
+        # Load from Excel file - "Stores Checklist" sheet
+        try:
+            df = load_regression_data_from_excel()
+        except Exception as e:
+            st.error(f"Failed to load Excel file: {e}")
+            st.warning("Using mock data instead")
+            df = generate_mock_data(MOCK_DATA_ROWS)
+
+    # Clean column names
+    df.columns = df.columns.str.strip()
+
+    # DEBUG: Print columns
+    print(f"[DEBUG Regression] Loaded data columns: {df.columns.tolist()}")
+    print(f"[DEBUG Regression] Data shape: {df.shape}")
+
     processor = RegressionDataProcessor(df)
     return processor
 

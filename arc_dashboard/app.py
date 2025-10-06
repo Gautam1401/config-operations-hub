@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from arc_dashboard.config.settings import *
 from arc_dashboard.data.mock_data import generate_mock_data
 from arc_dashboard.data.sharepoint_loader import load_data_from_sharepoint
+from arc_dashboard.data.excel_loader import load_arc_data_from_excel
 from arc_dashboard.utils.data_processor import ARCDataProcessor
 from arc_dashboard.components.kpi_cards import (
     render_kpi_grid,
@@ -80,34 +81,38 @@ def initialize_session_state():
 # ============================================================================
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data(use_mock: bool = True):
+def load_data(use_mock: bool = False):
     """
-    Load data from SharePoint or mock data
-    
+    Load data from Excel file or mock data
+
     Args:
-        use_mock: Whether to use mock data
-        
+        use_mock: Whether to use mock data (default: False - use real Excel data)
+
     Returns:
         ARCDataProcessor: Data processor instance with loaded data
     """
     if use_mock:
         df = generate_mock_data(MOCK_DATA_ROWS)
     else:
-        # Load from SharePoint
-        df = load_data_from_sharepoint(SHAREPOINT_CONFIG)
-        if df is None:
-            st.warning("Failed to load from SharePoint, using mock data")
+        # Load from Excel file
+        try:
+            df = load_arc_data_from_excel()
+        except Exception as e:
+            st.error(f"Failed to load Excel file: {e}")
+            st.warning("Using mock data instead")
             df = generate_mock_data(MOCK_DATA_ROWS)
-    
+
     # IMPROVEMENT #2: Clean column names immediately after loading
     df.columns = df.columns.str.strip()
-    df.rename(columns={'Line of Business': 'Module'}, inplace=True)
-    
+
+    # Rename columns if needed (check if 'Line of Business' exists)
+    if 'Line of Business' in df.columns:
+        df.rename(columns={'Line of Business': 'Module'}, inplace=True)
+
     # DEBUG: Print columns during development
-    if USE_MOCK_DATA:
-        print(f"[DEBUG] Loaded data columns: {df.columns.tolist()}")
-        print(f"[DEBUG] Data shape: {df.shape}")
-    
+    print(f"[DEBUG ARC] Loaded data columns: {df.columns.tolist()}")
+    print(f"[DEBUG ARC] Data shape: {df.shape}")
+
     # Return ARCDataProcessor instance
     return ARCDataProcessor(df)
 

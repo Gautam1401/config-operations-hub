@@ -17,7 +17,7 @@ COMPANY_NAME = "Tekion"
 # DATA SOURCE
 # ============================================================================
 
-USE_MOCK_DATA = True  # Set to False for SharePoint
+USE_MOCK_DATA = False  # Set to True for mock data, False for real Excel data
 
 SHAREPOINT_CONFIG = {
     'site_url': 'https://your-tenant.sharepoint.com/sites/your-site',

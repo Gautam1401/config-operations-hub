@@ -7,7 +7,8 @@ DASHBOARD_TITLE = "Integration Dashboard"
 DASHBOARD_ICON = "🔗"
 
 # Data source settings
-USE_MOCK_DATA = True  # Set to False when connecting to SharePoint
+USE_MOCK_DATA = False  # Set to True for mock data, False for real Excel data
+EXCEL_FILE_PATH = "data/Integration Access Board.xlsx"
 SHAREPOINT_SITE_URL = ""  # To be configured
 SHAREPOINT_LIST_NAME = "Integration Access Board"
 
