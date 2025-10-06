@@ -6,6 +6,7 @@ Handles data transformations, calculations, and filtering
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+from shared.column_utils import find_column, has_column
 
 
 class ARCDataProcessor:

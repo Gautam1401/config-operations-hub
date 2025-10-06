@@ -7,6 +7,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from crm_dashboard.config.settings import UPCOMING_WEEK_DAYS
+from shared.column_utils import find_column, has_column
 
 
 class CRMDataProcessor:
@@ -24,21 +25,35 @@ class CRMDataProcessor:
     
     def _prepare_data(self):
         """Prepare data: convert dates, calculate days to go live, create combined fields"""
-        
+
         print(f"[DEBUG CRMDataProcessor] _prepare_data - Columns BEFORE prep: {self.df.columns.tolist()}")
-        
+
         # Clean column names
         self.df.columns = self.df.columns.str.strip()
-        
+
+        # Use fuzzy column matching
+        go_live_col = find_column(self.df, 'Go Live Date')
+        dealer_name_col = find_column(self.df, 'Dealer Name')
+        dealer_id_col = find_column(self.df, 'Dealer ID')
+
         # Convert Go Live Date to datetime
-        self.df['Go Live Date'] = pd.to_datetime(self.df['Go Live Date'])
-        
+        self.df[go_live_col] = pd.to_datetime(self.df[go_live_col], errors='coerce')
+
+        # Standardize to 'Go Live Date' column name
+        if go_live_col != 'Go Live Date':
+            self.df.rename(columns={go_live_col: 'Go Live Date'}, inplace=True)
+
         # Calculate Days to Go Live
         today = pd.Timestamp(datetime.now().date())
         self.df['Days to Go Live'] = (self.df['Go Live Date'] - today).dt.days
-        
+
         # Create Dealership Name (Dealer Name + Dealer ID)
-        self.df['Dealership Name'] = self.df['Dealer Name'] + ' (' + self.df['Dealer ID'] + ')'
+        if has_column(self.df, 'Dealership Name'):
+            # Already exists, don't overwrite
+            pass
+        else:
+            # Create from Dealer Name + Dealer ID
+            self.df['Dealership Name'] = self.df[dealer_name_col].astype(str) + ' (' + self.df[dealer_id_col].astype(str) + ')'
         
         # Add Month and Year columns for filtering
         self.df['Month'] = self.df['Go Live Date'].dt.month

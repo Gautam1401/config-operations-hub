@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Dict, List
+from shared.column_utils import find_column, has_column
 
 
 class RegressionDataProcessor:

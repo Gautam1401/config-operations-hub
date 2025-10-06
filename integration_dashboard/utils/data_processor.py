@@ -15,6 +15,7 @@ from integration_dashboard.config.settings import (
     DATE_FORMAT,
     DISPLAY_DATE_FORMAT
 )
+from shared.column_utils import find_column, has_column
 
 
 class IntegrationDataProcessor:
