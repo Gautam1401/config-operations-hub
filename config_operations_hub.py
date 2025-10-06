@@ -15,7 +15,7 @@ import regression_dashboard.app as regression_app
 from shared.styles import apply_modern_styles, render_modern_header
 
 # Import authentication
-from shared.auth import require_auth, render_user_info, is_current_user_super_admin
+from shared.auth import require_auth, is_current_user_super_admin
 from shared.admin_manager import render_admin_management_page
 
 
@@ -58,18 +58,27 @@ def main():
         st.markdown("---")
         
         # Display current user info
-        render_user_info()
+        if 'user_email' in st.session_state:
+            st.markdown(f"**Email:** {st.session_state.user_email}")
+            
+            # Show role
+            if st.session_state.get('is_super_admin', False):
+                st.markdown("**Role:** ⭐ Super Admin")
+            elif st.session_state.get('is_admin', False):
+                st.markdown("**Role:** 🔧 Admin")
+            else:
+                st.markdown("**Role:** 👁️ Viewer")
         
         st.markdown("---")
         
         # Admin Management (only for super admins)
         if is_current_user_super_admin():
             st.markdown("#### ⭐ Admin Panel")
-            if st.button("🔧 Manage Admins", use_container_width=True):
+            if st.button("🔧 Manage Admins", use_container_width=True, key="manage_admins_btn"):
                 st.session_state['show_admin_panel'] = True
         
         # Logout button
-        if st.button("🚪 Logout", use_container_width=True, type="secondary"):
+        if st.button("🚪 Logout", use_container_width=True, type="secondary", key="logout_btn_main"):
             # Clear session state
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
@@ -82,7 +91,7 @@ def main():
         render_admin_management_page()
         
         # Back button
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Dashboard", key="back_to_dashboard_btn"):
             st.session_state['show_admin_panel'] = False
             st.rerun()
         return
