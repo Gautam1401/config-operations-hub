@@ -1,0 +1,66 @@
+ARC CONFIGURATION DASHBOARD - PROJECT STRUCTURE
+================================================
+
+Generated: October 6, 2025
+
+DIRECTORY TREE:
+===============
+
+PyCharmMiscProject/
+│
+├── config_operations_hub.py          (Main Hub - Entry Point)
+│
+├── arc_dashboard/                     (ARC Configuration Dashboard)
+│   │
+│   ├── app.py                        (Main Application Logic)
+│   │
+│   ├── components/                   (UI Components)
+│   │   ├── __init__.py
+│   │   ├── kpi_cards.py             (KPI Cards, Region Banners, Module Cards)
+│   │   └── data_table.py            (Data Table Display)
+│   │
+│   ├── config/                       (Configuration)
+│   │   ├── __init__.py
+│   │   └── settings.py              (Dashboard Settings & Constants)
+│   │
+│   ├── data/                         (Data Sources)
+│   │   ├── __init__.py
+│   │   ├── mock_data.py             (Mock Data Generator)
+│   │   └── sharepoint_loader.py     (SharePoint Data Loader)
+│   │
+│   └── utils/                        (Utilities)
+│       ├── __init__.py
+│       └── data_processor.py        (Data Processing & Filtering)
+│
+├── DASHBOARD_CODE_DOCUMENTATION.md   (Complete Documentation)
+├── CODE_SUMMARY.md                   (Quick Reference)
+└── PROJECT_STRUCTURE.txt             (This File)
+
+
+FILE DETAILS:
+=============
+
+./arc_dashboard/config/settings.py
+  Lines:      130 | Size: 4.0K
+
+./arc_dashboard/utils/data_processor.py
+  Lines:      280 | Size: 8.4K
+
+./arc_dashboard/components/kpi_cards.py
+  Lines:      143 | Size: 4.2K
+
+./arc_dashboard/components/data_table.py
+  Lines:      169 | Size: 4.4K
+
+./arc_dashboard/app.py
+  Lines:      362 | Size: 11K
+
+./arc_dashboard/data/mock_data.py
+  Lines:      119 | Size: 3.9K
+
+./arc_dashboard/data/sharepoint_loader.py
+  Lines:      182 | Size: 6.0K
+
+./config_operations_hub.py
+  Lines:      114 | Size: 2.9K
+

@@ -1,0 +1,21 @@
+# Core Dashboard Framework
+streamlit>=1.31.0
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Data Visualization
+plotly>=5.18.0
+
+# Excel File Handling
+openpyxl>=3.1.0
+
+# SharePoint/Microsoft Graph API Integration
+msal>=1.26.0
+requests>=2.31.0
+Office365-REST-Python-Client>=2.5.0
+
+# Date/Time Handling
+python-dateutil>=2.8.0
+
+# Environment Variables
+python-dotenv>=1.0.0
