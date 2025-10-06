@@ -71,29 +71,88 @@ def load_arc_data_from_excel():
     # Create final dataframe
     df_long = pd.DataFrame(long_format_data)
 
-    # Clean up Status values
+    # ========================================================================
+    # DATA STANDARDIZATION - Clean up inconsistent values
+    # ========================================================================
+
+    # 1. Clean up Status values
     df_long['Status'] = df_long['Status'].fillna('Not Configured')
     df_long['Status'] = df_long['Status'].astype(str).str.strip()
 
-    # Standardize status values
+    # Standardize status values (case-insensitive)
     status_mapping = {
-        'Completed': 'Completed',
-        'Complete': 'Completed',
-        'Done': 'Completed',
-        'WIP': 'WIP',
-        'In Progress': 'WIP',
-        'Not Configured': 'Not Configured',
-        'Not Started': 'Not Configured',
-        'NA': 'Not Configured',
-        'N/A': 'Not Configured',
-        '': 'Not Configured'
+        'completed': 'Completed',
+        'complete': 'Completed',
+        'done': 'Completed',
+        'wip': 'WIP',
+        'in progress': 'WIP',
+        'not configured': 'Not Configured',
+        'not started': 'Not Configured',
+        'na': 'Not Configured',
+        'n/a': 'Not Configured',
+        '': 'Not Configured',
+        'nan': 'Not Configured'
     }
 
-    df_long['Status'] = df_long['Status'].replace(status_mapping)
+    df_long['Status'] = df_long['Status'].str.lower().replace(status_mapping)
+
+    # 2. Standardize Region values (case-insensitive, trim spaces)
+    df_long['Region'] = df_long['Region'].fillna('Unknown')
+    df_long['Region'] = df_long['Region'].astype(str).str.strip()
+
+    # Region mapping - consolidate variations
+    region_mapping = {
+        'canada': 'Canada',
+        'canda': 'Canada',  # Fix typo
+        'usa east': 'USA East',
+        'usa west': 'USA West',
+        'usa west and central': 'USA West and Central',
+        'mid market': 'Mid Market',
+        'enterprise': 'Enterprise',
+        'united kingdom': 'United Kingdom',
+        'uk': 'United Kingdom',
+        'nam': 'NAM',
+        'north america': 'NAM',
+        'emea': 'EMEA',
+        'europe': 'EMEA',
+        'apac': 'APAC',
+        'asia pacific': 'APAC',
+        'latam': 'LATAM',
+        'latin america': 'LATAM'
+    }
+
+    df_long['Region'] = df_long['Region'].str.lower().replace(region_mapping)
+
+    # 3. Standardize Module values (should already be correct, but just in case)
+    df_long['Module'] = df_long['Module'].str.strip()
+
+    # 4. Standardize Type of Implementation
+    df_long['Type of Implementation'] = df_long['Type of Implementation'].fillna('Unknown')
+    df_long['Type of Implementation'] = df_long['Type of Implementation'].astype(str).str.strip()
+
+    impl_type_mapping = {
+        'new point': 'New Point',
+        'conquest': 'Conquest',
+        'buy/sell': 'Buy/Sell',
+        'buy-sell': 'Buy/Sell',
+        'buysell': 'Buy/Sell',
+        'enterprise': 'Enterprise',
+        'migration': 'Migration',
+        'upgrade': 'Upgrade'
+    }
+
+    df_long['Type of Implementation'] = df_long['Type of Implementation'].str.lower().replace(impl_type_mapping)
+
+    # 5. Clean up Dealership Name and Assigned To
+    df_long['Dealership Name'] = df_long['Dealership Name'].astype(str).str.strip()
+    df_long['Assigned To'] = df_long['Assigned To'].fillna('Unassigned')
+    df_long['Assigned To'] = df_long['Assigned To'].astype(str).str.strip()
 
     print(f"[DEBUG ARC Loader] Loaded {len(df)} dealerships from {len(xl.sheet_names)} sheets")
     print(f"[DEBUG ARC Loader] Transformed to {len(df_long)} rows (long format)")
     print(f"[DEBUG ARC Loader] Columns: {df_long.columns.tolist()}")
+    print(f"[DEBUG ARC Loader] Unique Regions: {df_long['Region'].unique().tolist()}")
+    print(f"[DEBUG ARC Loader] Unique Statuses: {df_long['Status'].unique().tolist()}")
 
     return df_long
 
