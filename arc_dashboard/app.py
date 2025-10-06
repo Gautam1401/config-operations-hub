@@ -470,19 +470,18 @@ def render_arc_dashboard():
     """Render the ARC Configuration dashboard (for embedding in main hub)"""
     # Initialize session state
     initialize_session_state()
-    
+
     # Load data
     processor = load_data(use_mock=USE_MOCK_DATA)
-    
-    # Sidebar
-    render_sidebar(processor)
-    
+
+    # NO SIDEBAR - User Management sidebar is rendered by main hub
+
     # Main content area
     tab1, tab2 = st.tabs(["📊 Data", "📈 Analytics"])
-    
+
     with tab1:
         render_data_tab(processor)
-    
+
     with tab2:
         render_analytics_tab()
 
