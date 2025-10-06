@@ -59,12 +59,25 @@ class CRMDataProcessor:
         self.df['Month'] = self.df['Go Live Date'].dt.month
         self.df['Year'] = self.df['Go Live Date'].dt.year
         self.df['Month Name'] = self.df['Go Live Date'].dt.strftime('%B %Y')
-        
+
         # Mark upcoming week
         self.df['Is Upcoming Week'] = self.df['Days to Go Live'].apply(
             lambda x: 0 <= x <= UPCOMING_WEEK_DAYS
         )
-        
+
+        # Add 'Go Live Status' column if it doesn't exist (needed for Data Incorrect logic)
+        if 'Go Live Status' not in self.df.columns:
+            # Default to None - can be populated from Excel if column exists
+            self.df['Go Live Status'] = None
+
+        # Add 'Configuration Type' column if it doesn't exist
+        if 'Configuration Type' not in self.df.columns:
+            # Map from 'Configuration Status' if it exists
+            if 'Configuration Status' in self.df.columns:
+                self.df['Configuration Type'] = self.df['Configuration Status']
+            else:
+                self.df['Configuration Type'] = None
+
         # Calculate derived statuses for each sub-tab
         self._calculate_configuration_status()
         self._calculate_pre_go_live_status()
