@@ -66,21 +66,40 @@ def load_crm_data_from_excel():
     for col in df.columns:
         if df[col].dtype == 'object':
             df[col] = df[col].astype(str).str.strip()
+            # Replace 'nan' string with actual NaN
+            df[col] = df[col].replace(['nan', 'NaN', 'None', ''], pd.NA)
 
-    # Standardize Region
-    region_mapping = {
-        'nam': 'NAM',
-        'north america': 'NAM',
-        'emea': 'EMEA',
-        'europe': 'EMEA',
-        'apac': 'APAC',
-        'asia pacific': 'APAC',
-        'latam': 'LATAM',
-        'latin america': 'LATAM'
-    }
+    # Standardize Configuration Status
+    if 'Configuration Status' in df.columns:
+        # Map variations to standard values
+        config_mapping = {
+            'standard configuration': 'Standard',
+            'stnadard configuration': 'Standard',  # Fix typo
+            'standard': 'Standard',
+            'copy store': 'Copy',
+            'copy': 'Copy',
+            'not configured': 'Not Configured',
+        }
+        df['Configuration Status'] = df['Configuration Status'].str.lower().replace(config_mapping)
+        # Replace NaN with 'Not Configured'
+        df['Configuration Status'] = df['Configuration Status'].fillna('Not Configured')
 
+    # Standardize Region - Capitalize first letter
     if 'Region' in df.columns:
-        df['Region'] = df['Region'].str.lower().replace(region_mapping)
+        # Capitalize first letter of each word
+        df['Region'] = df['Region'].str.title()
+
+        # Handle specific region mappings
+        region_mapping = {
+            'Usa East': 'USA East',
+            'Usa West': 'USA West',
+            'Usa West And Central': 'USA West and Central',
+            'Mid Market': 'Mid Market',
+            'Enterprise': 'Enterprise',
+            'United Kingdom': 'United Kingdom',
+            'Canada': 'Canada',
+        }
+        df['Region'] = df['Region'].replace(region_mapping)
 
     print(f"[DEBUG CRM Loader] Final columns: {df.columns.tolist()}")
 
