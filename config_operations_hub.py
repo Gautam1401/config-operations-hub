@@ -52,6 +52,41 @@ def main():
     if not require_auth():
         return
     
+    # === SIDEBAR: User Management ===
+    with st.sidebar:
+        st.markdown("### 👤 User Management")
+        st.markdown("---")
+        
+        # Display current user info
+        render_user_info()
+        
+        st.markdown("---")
+        
+        # Admin Management (only for super admins)
+        if is_current_user_super_admin():
+            st.markdown("#### ⭐ Admin Panel")
+            if st.button("🔧 Manage Admins", use_container_width=True):
+                st.session_state['show_admin_panel'] = True
+        
+        # Logout button
+        if st.button("🚪 Logout", use_container_width=True, type="secondary"):
+            # Clear session state
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+    
+    # === MAIN CONTENT ===
+    
+    # Check if admin panel should be shown
+    if st.session_state.get('show_admin_panel', False):
+        render_admin_management_page()
+        
+        # Back button
+        if st.button("← Back to Dashboard"):
+            st.session_state['show_admin_panel'] = False
+            st.rerun()
+        return
+    
     # Render modern header
     render_modern_header(
         "Config Operations Hub",
