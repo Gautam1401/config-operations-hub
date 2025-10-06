@@ -253,19 +253,21 @@ class CRMDataProcessor:
         if df is None:
             df = self.df
 
-        # Safety check: ensure Region column exists and has data
-        if 'Region' not in df.columns or df['Region'].dropna().empty:
-            print("[WARNING] No 'Region' column or all values missing!")
+        # Safety check: ensure Region column exists
+        if 'Region' not in df.columns:
+            print("[DEBUG CRM] 'Region' column missing in DataFrame!")
             return ['Unknown']  # Return default region
 
         # Get unique regions, excluding NaN values
-        regions = sorted(df['Region'].dropna().unique().tolist())
+        regions = df['Region'].dropna().unique().tolist()
+        print(f"[DEBUG CRM] Regions extracted: {regions}")
 
         # If no regions found, return default
         if not regions:
+            print("[DEBUG CRM] No regions found, returning default")
             return ['Unknown']
 
-        return regions
+        return sorted(regions)
 
     
     def get_configuration_kpis(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:

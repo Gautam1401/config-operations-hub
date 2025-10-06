@@ -255,19 +255,21 @@ class IntegrationDataProcessor:
         Returns:
             List of unique regions
         """
-        # Safety check: ensure Region column exists and has data
-        if 'Region' not in df.columns or df['Region'].dropna().empty:
-            print("[WARNING] No 'Region' column or all values missing!")
+        # Safety check: ensure Region column exists
+        if 'Region' not in df.columns:
+            print("[DEBUG Integration] 'Region' column missing in DataFrame!")
             return ['Unknown']  # Return default region
 
-        regions = sorted(df['Region'].dropna().unique().tolist())
+        # Get unique regions, excluding NaN values
+        regions = df['Region'].dropna().unique().tolist()
+        print(f"[DEBUG Integration] Regions extracted: {regions}")
 
         # If no regions found, return default
         if not regions:
+            print("[DEBUG Integration] No regions found, returning default")
             return ['Unknown']
 
-        print(f"[DEBUG Integration Processor] Regions: {regions}")
-        return regions
+        return sorted(regions)
     
     def get_region_counts(self, status: str, df: pd.DataFrame) -> Dict[str, int]:
         """

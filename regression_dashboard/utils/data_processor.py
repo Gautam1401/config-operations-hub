@@ -152,15 +152,18 @@ class RegressionDataProcessor:
         Returns:
             List of unique regions
         """
-        # Safety check: ensure Region column exists and has data
-        if 'Region' not in df.columns or df['Region'].dropna().empty:
-            print("[WARNING] No 'Region' column or all values missing!")
+        # Safety check: ensure Region column exists
+        if 'Region' not in df.columns:
+            print("[DEBUG Regression] 'Region' column missing in DataFrame!")
             return ['Unknown']  # Return default region
 
+        # Get unique regions, excluding NaN values
         regions = df['Region'].dropna().unique().tolist()
+        print(f"[DEBUG Regression] Regions extracted: {regions}")
 
         # If no regions found, return default
         if not regions:
+            print("[DEBUG Regression] No regions found, returning default")
             return ['Unknown']
 
         regions.sort()
