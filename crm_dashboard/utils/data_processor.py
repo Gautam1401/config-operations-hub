@@ -245,11 +245,14 @@ class CRMDataProcessor:
         return filtered
     
     def filter_by_region(self, region: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """Filter data by region"""
+        """Filter data by region ('All' returns all data)"""
         if df is None:
             df = self.df
         
-        filtered = df[df['Region'] == region].copy()
+        if region == 'All':
+            filtered = df.copy()
+        else:
+            filtered = df[df['Region'] == region].copy()
         print(f"[DEBUG CRMDataProcessor] Filtered by region '{region}': {len(filtered)} records")
         return filtered
     

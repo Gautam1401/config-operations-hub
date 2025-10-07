@@ -234,13 +234,13 @@ class RegressionDataProcessor:
         Filter data by region
         
         Args:
-            region: Region name or 'All Regions'
+            region: Region name or 'All'
             df: DataFrame to filter
             
         Returns:
             Filtered DataFrame
         """
-        if region == 'All Regions':
+        if region == 'All' or region == 'All Regions':
             return df.copy()
         else:
             filtered = df[df['Region'] == region].copy()

@@ -336,13 +336,16 @@ class IntegrationDataProcessor:
         Filter data by region
         
         Args:
-            region: Region to filter by
+            region: Region to filter by ('All' returns all data)
             df: DataFrame
             
         Returns:
             Filtered DataFrame
         """
-        filtered = df[df['Region'] == region].copy()
+        if region == 'All':
+            filtered = df.copy()
+        else:
+            filtered = df[df['Region'] == region].copy()
         print(f"[DEBUG Integration Processor] Filtered by region {region}: {len(filtered)} records")
         return filtered
     

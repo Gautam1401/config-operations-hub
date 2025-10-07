@@ -129,7 +129,7 @@ def authenticate_user() -> Optional[str]:
     # Show login form
     st.markdown("### 🔐 Tekion Config Operations Hub")
     st.markdown("---")
-    st.caption("🔄 Version: 1.0.7 | Updated: 2025-10-07 21:04:20 IST")
+    st.caption("🔄 Version: 1.0.8 | Updated: 2025-10-07 21:13:11 IST")
     st.markdown("---")
     
     with st.form("login_form"):
