@@ -10,10 +10,10 @@ import os
 def get_data_source_folder() -> Path:
     """
     Get the Data Source folder path
-    
-    For now: Uses hardcoded path for single user
-    Future: Can be extended to support multiple users via environment variables
-    
+
+    Returns the "Data Source" folder in the project root.
+    This folder is committed to GitHub and deployed to Streamlit Cloud.
+
     Returns:
         Path: Path to the Data Source folder
     """
@@ -21,14 +21,11 @@ def get_data_source_folder() -> Path:
     env_path = os.getenv('DATA_SOURCE_PATH')
     if env_path:
         return Path(env_path)
-    
-    # Option 2: Default path for current user
-    # When adding more users, you can:
-    # - Set DATA_SOURCE_PATH environment variable on Streamlit Cloud
-    # - Or update this default path
-    default_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source"
-    
-    return default_path
+
+    # Option 2: Use "Data Source" folder in project root
+    # This folder is committed to GitHub and works on both local and Streamlit Cloud
+    project_root = Path(__file__).parent.parent
+    return project_root / "Data Source"
 
 
 def get_excel_file_path(filename: str) -> Path:
