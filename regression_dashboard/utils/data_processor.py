@@ -5,7 +5,7 @@ Regression Testing Dashboard - Data Processor
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from shared.column_utils import find_column, has_column
 
 
