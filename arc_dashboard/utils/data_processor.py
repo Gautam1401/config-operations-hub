@@ -177,37 +177,33 @@ class ARCDataProcessor:
 
         return breakdown
     def get_regions(self, df: Optional[pd.DataFrame] = None) -> List[str]:
-        """
-        Get unique regions from data
-
-        Args:
-            df: DataFrame to get regions from (uses self.df if None)
-
-        Returns:
-            list: Sorted list of unique regions with 'All' prepended
-        """
+        """Get unique regions from data"""
         if df is None:
             df = self.df
 
         # Safety check: ensure Region column exists
         if 'Region' not in df.columns:
             print("[DEBUG ARC] 'Region' column missing in DataFrame!")
-            return ['All', 'Unknown']  # Return default regions
+            return ['All']
 
-        # Get unique regions, excluding NaN values
-        regions = df['Region'].dropna().unique().tolist()
-        # Add 'ALL' option to regions
-        if 'ALL' not in regions:
-            regions.insert(0, 'ALL')
-        print(f"[DEBUG ARC] Regions extracted: {regions}")
-
+        # Normalize regions: strip whitespace, title case
+        df['Region'] = df['Region'].astype(str).str.strip().str.title()
+        
+        # Get unique regions, excluding NaN and empty values
+        regions = [r for r in df['Region'].unique() if r and r != 'Nan']
+        
         # If no regions found, return default
         if not regions:
             print("[DEBUG ARC] No regions found, returning default")
-            return ['All', 'Unknown']
+            return ['All']
 
-        return ['All'] + sorted(regions)
-    
+        # Sort regions alphabetically, then add 'All' at the beginning
+        sorted_regions = sorted(regions)
+        region_options = ['All'] + sorted_regions
+        
+        print(f"[DEBUG ARC] Regions extracted: {region_options}")
+        return region_options
+
     def filter_by_status(self, status: str, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
         Filter data by status (wide format)

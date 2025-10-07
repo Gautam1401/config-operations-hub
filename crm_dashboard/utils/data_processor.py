@@ -261,25 +261,25 @@ class CRMDataProcessor:
         # Safety check: ensure Region column exists
         if 'Region' not in df.columns:
             print("[DEBUG CRM] 'Region' column missing in DataFrame!")
-            return ['Unknown']  # Return default region
+            return ['Unknown']
 
-        # Get unique regions, excluding NaN values
-        regions = df['Region'].dropna().unique().tolist()
-        # Add 'ALL' option to regions
-        if 'ALL' not in regions:
-            regions.insert(0, 'ALL')
-        print(f"[DEBUG CRM] Regions extracted: {regions}")
-
+        # Normalize regions: strip whitespace, title case
+        df['Region'] = df['Region'].astype(str).str.strip().str.title()
+        
+        # Get unique regions, excluding NaN and empty values
+        regions = [r for r in df['Region'].unique() if r and r != 'Nan']
+        
         # If no regions found, return default
         if not regions:
             print("[DEBUG CRM] No regions found, returning default")
-            return ['Unknown']
+            return ['All']
 
-        # Sort regions alphabetically, then add 'ALL' at the beginning
-        sorted_regions = sorted([r for r in regions if r != 'ALL'])
-        if 'ALL' in regions:
-            return ['ALL'] + sorted_regions
-        return sorted_regions
+        # Sort regions alphabetically, then add 'All' at the beginning
+        sorted_regions = sorted(regions)
+        region_options = ['All'] + sorted_regions
+        
+        print(f"[DEBUG CRM] Regions extracted: {region_options}")
+        return region_options
 
     
     def get_configuration_kpis(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:

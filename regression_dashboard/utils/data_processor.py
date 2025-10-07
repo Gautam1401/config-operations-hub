@@ -160,39 +160,34 @@ class RegressionDataProcessor:
             print(f"[DEBUG Regression Processor] Filtered by {impl_type}: {len(filtered)} records")
             return filtered
     
-    def get_regions(self, df: pd.DataFrame) -> List[str]:
-        """
-        Get unique regions from data
+    def get_regions(self, df: Optional[pd.DataFrame] = None) -> List[str]:
+        """Get unique regions from data"""
+        if df is None:
+            df = self.df
 
-        Args:
-            df: DataFrame
-
-        Returns:
-            List of unique regions
-        """
         # Safety check: ensure Region column exists
         if 'Region' not in df.columns:
             print("[DEBUG Regression] 'Region' column missing in DataFrame!")
-            return ['Unknown']  # Return default region
+            return ['All']
 
-        # Get unique regions, excluding NaN values
-        regions = df['Region'].dropna().unique().tolist()
+        # Normalize regions: strip whitespace, title case
+        df['Region'] = df['Region'].astype(str).str.strip().str.title()
         
-        # Sort regions alphabetically, then add 'ALL' at the beginning
-        sorted_regions = sorted(regions)
-        if 'ALL' not in sorted_regions:
-            sorted_regions.insert(0, 'ALL')
-        regions = sorted_regions
-        print(f"[DEBUG Regression] Regions extracted: {regions}")
-
+        # Get unique regions, excluding NaN and empty values
+        regions = [r for r in df['Region'].unique() if r and r != 'Nan']
+        
         # If no regions found, return default
         if not regions:
             print("[DEBUG Regression] No regions found, returning default")
-            return ['Unknown']
+            return ['All']
 
-        regions.sort()
-        return regions
-    
+        # Sort regions alphabetically, then add 'All' at the beginning
+        sorted_regions = sorted(regions)
+        region_options = ['All'] + sorted_regions
+        
+        print(f"[DEBUG Regression] Regions extracted: {region_options}")
+        return region_options
+
     def get_region_counts(self, kpi_name: str, df: pd.DataFrame) -> Dict[str, int]:
         """
         Get counts by region for a specific KPI
