@@ -24,8 +24,8 @@ from shared.styles import apply_modern_styles
 
 
 # Dashboard Version
-__version__ = "1.1.0"
-__last_updated__ = "2025-10-07 21:40:45 IST"
+__version__ = "1.1.1"
+__last_updated__ = "2025-10-07 22:02:12 IST"
 
 def initialize_session_state():
     """Initialize session state variables"""
