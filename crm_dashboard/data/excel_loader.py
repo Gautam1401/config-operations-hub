@@ -16,9 +16,8 @@ def load_crm_data_from_excel():
     Returns:
         pd.DataFrame: CRM configuration data with standardized column names
     """
-    # Get the project root directory
-    project_root = Path(__file__).parent.parent.parent
-    excel_path = project_root / "data" / "CRM Data.xlsx"
+    # Point to Data Source folder on Desktop
+    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "CRM Data.xlsx"
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")

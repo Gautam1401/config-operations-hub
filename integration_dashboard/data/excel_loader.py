@@ -15,9 +15,8 @@ def load_integration_data_from_excel():
     Returns:
         pd.DataFrame: Integration access board data with standardized columns
     """
-    # Get the project root directory
-    project_root = Path(__file__).parent.parent.parent
-    excel_path = project_root / "data" / "Integration Access Board.xlsx"
+    # Point to Data Source folder on Desktop
+    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "Integration Access Board.xlsx"
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")

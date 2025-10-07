@@ -27,9 +27,8 @@ def load_arc_data_from_excel():
     """
     from datetime import datetime
 
-    # Get the project root directory
-    project_root = Path(__file__).parent.parent.parent
-    excel_path = project_root / "data" / "ARC Configuration.xlsx"
+    # Point to Data Source folder on Desktop
+    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "ARC Configurations.xlsx"
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")

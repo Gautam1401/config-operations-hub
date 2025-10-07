@@ -15,9 +15,8 @@ def load_regression_data_from_excel():
     Returns:
         pd.DataFrame: Regression testing data with standardized columns
     """
-    # Get the project root directory
-    project_root = Path(__file__).parent.parent.parent
-    excel_path = project_root / "data" / "E2E Testing Check.xlsx"
+    # Point to Data Source folder on Desktop
+    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "E2E Testing Check .xlsx"
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")
