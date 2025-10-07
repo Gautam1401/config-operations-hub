@@ -197,25 +197,30 @@ def render_kpi_cards_crm(kpis: dict, kpi_type: str):
 
 
 def render_region_cards_crm(region_counts: dict):
-    """Render region cards with aligned buttons"""
+    """Render region cards with aligned buttons - includes 'All' option"""
     active_regions = {region: count for region, count in region_counts.items() if count > 0}
-    
+
     if not active_regions:
         return
-    
+
+    # Add "All" option with total count
+    total_count = sum(active_regions.values())
+    all_regions = {'All': total_count}
+    all_regions.update(active_regions)
+
     # Build regions HTML
     regions_html = '<div class="region-row">'
-    
-    for region, count in active_regions.items():
+
+    for region, count in all_regions.items():
         selected_class = 'selected' if region == st.session_state.crm_selected_region else ''
         regions_html += f'<div class="region-btn {selected_class}">{region} ({count})</div>'
-    
+
     regions_html += '</div>'
     st.markdown(regions_html, unsafe_allow_html=True)
-    
+
     # Handle button clicks
-    cols = st.columns(len(active_regions))
-    for idx, region in enumerate(active_regions.keys()):
+    cols = st.columns(len(all_regions))
+    for idx, region in enumerate(all_regions.keys()):
         with cols[idx]:
             if st.button(f"{region}", key=f"crm_region_btn_{region}"):
                 st.session_state.crm_selected_region = region
@@ -258,16 +263,20 @@ def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFr
         # Show table if region is selected
         if st.session_state.crm_selected_region:
             st.markdown("---")
-            
-            region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
-            
+
+            # Handle "All" region - show all data, otherwise filter by region
+            if st.session_state.crm_selected_region == 'All':
+                region_filtered_df = filtered_df.copy()
+            else:
+                region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
+
             if st.session_state.crm_selected_kpi != 'Go Lives':
                 region_filtered_df = region_filtered_df[
                     region_filtered_df['Configuration Status'] == st.session_state.crm_selected_kpi
                 ]
-            
+
             display_df = processor.get_display_dataframe('configuration', region_filtered_df)
-            
+
             render_data_table(
                 display_df,
                 title=f"{st.session_state.crm_selected_kpi} - {st.session_state.crm_selected_region}",
@@ -310,9 +319,13 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
         
         if st.session_state.crm_selected_region:
             st.markdown("---")
-            
-            region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
-            
+
+            # Handle "All" region - show all data, otherwise filter by region
+            if st.session_state.crm_selected_region == 'All':
+                region_filtered_df = filtered_df.copy()
+            else:
+                region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
+
             if st.session_state.crm_selected_kpi == 'Checks Completed':
                 region_filtered_df = region_filtered_df[
                     (region_filtered_df['Pre Go Live Assigned'].notna()) &
@@ -322,9 +335,9 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
                 region_filtered_df = region_filtered_df[
                     region_filtered_df['Pre Go Live Status'] == st.session_state.crm_selected_kpi
                 ]
-            
+
             display_df = processor.get_display_dataframe('pre_go_live', region_filtered_df)
-            
+
             render_data_table(
                 display_df,
                 title=f"{st.session_state.crm_selected_kpi} - {st.session_state.crm_selected_region}",
@@ -373,12 +386,16 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
         
         if st.session_state.crm_selected_region:
             st.markdown("---")
-            
-            region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
-            
+
+            # Handle "All" region - show all data, otherwise filter by region
+            if st.session_state.crm_selected_region == 'All':
+                region_filtered_df = filtered_df.copy()
+            else:
+                region_filtered_df = processor.filter_by_region(st.session_state.crm_selected_region, filtered_df)
+
             if st.session_state.crm_selected_kpi == 'Tests Completed':
                 region_filtered_df = region_filtered_df[
-                    (region_filtered_df['Go Live Testing Assignee'].notna()) & 
+                    (region_filtered_df['Go Live Testing Assignee'].notna()) &
                     (region_filtered_df['Go Live Testing Assignee'] != '') &
                     (region_filtered_df['Days to Go Live'] <= 0)
                 ]
@@ -391,7 +408,7 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
                     region_filtered_df = region_filtered_df[
                         region_filtered_df['Go Live Testing Status'] == st.session_state.crm_selected_kpi
                     ]
-            
+
             display_df = processor.get_display_dataframe('go_live_testing', region_filtered_df)
             
             render_data_table(
