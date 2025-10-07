@@ -2,15 +2,37 @@
 Integration Dashboard - Configuration Settings
 """
 
-# Dashboard metadata
+import sys
+import os
+
+# Add parent directory to path to import centralized config
+sys.path.insert(0, os.path.expanduser("~/Desktop/Operations Hub"))
+from hub_config import get_excel_path, INTEGRATION_EXCEL_PATH
+
+# ============================================================================
+# DASHBOARD METADATA
+# ============================================================================
+
 DASHBOARD_TITLE = "Integration Dashboard"
 DASHBOARD_ICON = "🔗"
+
+# ============================================================================
+# DATA SOURCE
+# ============================================================================
+
+# Excel file path from centralized config
+EXCEL_FILE_PATH = INTEGRATION_EXCEL_PATH
+SHEET_NAME = "Integration Access Board"
 
 # Data source settings
 USE_MOCK_DATA = False  # Set to True for mock data, False for real Excel data
 EXCEL_FILE_PATH = "data/Integration Access Board.xlsx"
 SHAREPOINT_SITE_URL = ""  # To be configured
 SHAREPOINT_LIST_NAME = "Integration Access Board"
+
+# ============================================================================
+# DATE FILTER OPTIONS
+# ============================================================================
 
 # Date filter options (sub-tabs)
 DATE_FILTERS = {
@@ -20,7 +42,10 @@ DATE_FILTERS = {
     'ytd': 'YTD (Year to Date)'
 }
 
-# KPI definitions
+# ============================================================================
+# KPI DEFINITIONS
+# ============================================================================
+
 KPI_DEFINITIONS = {
     'Total Go Lives': 'Total number of go-lives in the selected period',
     'GTG': 'Vendor List Updated = Yes',
@@ -30,11 +55,19 @@ KPI_DEFINITIONS = {
     'Data Incomplete': 'Missing key data fields'
 }
 
+# ============================================================================
+# IMPLEMENTATION TYPES & REGIONS
+# ============================================================================
+
 # Implementation types
 IMPLEMENTATION_TYPES = ['Conquest', 'Buy/Sell', 'New Point']
 
 # Regions (will be dynamically loaded from data)
 REGIONS = ['NAM', 'EMEA', 'APAC', 'LATAM']
+
+# ============================================================================
+# STATUS COLOR MAPPING
+# ============================================================================
 
 # Status color mapping
 STATUS_COLORS = {
@@ -56,6 +89,10 @@ KPI_COLORS = {
     'Data Incomplete': 'kpi-grey'
 }
 
+# ============================================================================
+# COLUMN MAPPINGS
+# ============================================================================
+
 # Column mappings from source data to standard names
 COLUMN_MAPPINGS = {
     # Source column name: Standard column name
@@ -70,6 +107,10 @@ COLUMN_MAPPINGS = {
     'Region': 'Region'
 }
 
+# ============================================================================
+# REQUIRED FIELDS
+# ============================================================================
+
 # Required fields for data completeness check
 REQUIRED_FIELDS = [
     'Dealer Name',
@@ -80,6 +121,10 @@ REQUIRED_FIELDS = [
     'Director',
     'Assignee'
 ]
+
+# ============================================================================
+# THRESHOLDS
+# ============================================================================
 
 # Days to Go Live thresholds by Implementation Type
 THRESHOLDS = {
@@ -103,6 +148,10 @@ THRESHOLDS = {
     }
 }
 
+# ============================================================================
+# DISPLAY SETTINGS
+# ============================================================================
+
 # Display columns for data table
 DISPLAY_COLUMNS = [
     'Dealership Name',
@@ -118,4 +167,3 @@ DISPLAY_COLUMNS = [
 # Date format
 DATE_FORMAT = '%Y-%m-%d'
 DISPLAY_DATE_FORMAT = '%d-%b-%Y'
-
