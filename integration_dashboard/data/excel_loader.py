@@ -10,7 +10,7 @@ from pathlib import Path
 
 def load_integration_data_from_excel():
     """
-    Load Integration data from Excel file
+    Load Integration data from Excel file (combines all sheets)
 
     Returns:
         pd.DataFrame: Integration access board data with standardized columns
@@ -22,8 +22,22 @@ def load_integration_data_from_excel():
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")
 
-    # Read the Excel file - try first sheet
-    df = pd.read_excel(excel_path, sheet_name=0)
+    # Read ALL sheets from the Excel file
+    xl = pd.ExcelFile(excel_path)
+
+    print(f"[DEBUG Integration Loader] Found {len(xl.sheet_names)} sheets: {xl.sheet_names}")
+
+    # Read and combine all sheets
+    all_data = []
+    for sheet_name in xl.sheet_names:
+        df_sheet = pd.read_excel(excel_path, sheet_name=sheet_name)
+        print(f"[DEBUG Integration Loader] Sheet '{sheet_name}': {len(df_sheet)} rows")
+        all_data.append(df_sheet)
+
+    # Combine all sheets
+    df = pd.concat(all_data, ignore_index=True)
+
+    print(f"[DEBUG Integration Loader] Combined data: {len(df)} rows")
 
     # Standardize column names - strip trailing/leading spaces
     df.columns = df.columns.str.strip()
