@@ -177,9 +177,12 @@ class RegressionDataProcessor:
 
         # Get unique regions, excluding NaN values
         regions = df['Region'].dropna().unique().tolist()
-        # Add 'ALL' option to regions
-        if 'ALL' not in regions:
-            regions.insert(0, 'ALL')
+        
+        # Sort regions alphabetically, then add 'ALL' at the beginning
+        sorted_regions = sorted(regions)
+        if 'ALL' not in sorted_regions:
+            sorted_regions.insert(0, 'ALL')
+        regions = sorted_regions
         print(f"[DEBUG Regression] Regions extracted: {regions}")
 
         # If no regions found, return default

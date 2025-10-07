@@ -275,7 +275,11 @@ class CRMDataProcessor:
             print("[DEBUG CRM] No regions found, returning default")
             return ['Unknown']
 
-        return sorted(regions)
+        # Sort regions alphabetically, then add 'ALL' at the beginning
+        sorted_regions = sorted([r for r in regions if r != 'ALL'])
+        if 'ALL' in regions:
+            return ['ALL'] + sorted_regions
+        return sorted_regions
 
     
     def get_configuration_kpis(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
