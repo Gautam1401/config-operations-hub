@@ -46,5 +46,5 @@ def get_excel_file_path(filename: str) -> Path:
 CRM_FILE = "CRM Data.xlsx"
 ARC_FILE = "ARC Configurations.xlsx"
 INTEGRATION_FILE = "Integration Access Board.xlsx"
-REGRESSION_FILE = "E2E Testing Check .xlsx"
+REGRESSION_FILE = "E2E Testing Check.xlsx"  # Fixed: removed space before .xlsx
 

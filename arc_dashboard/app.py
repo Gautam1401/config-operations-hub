@@ -58,8 +58,8 @@ except:
 
 
 # Dashboard Version
-__version__ = "1.1.1"
-__last_updated__ = "2025-10-07 22:02:12 IST"
+__version__ = "1.1.2"
+__last_updated__ = "2025-10-07 22:27:23 IST"
 
 def initialize_session_state():
     """Initialize session state variables - NEW FLOW: Module → KPI → Region → Table"""
@@ -160,8 +160,14 @@ def on_kpi_click(kpi_name: str):
 
 def on_region_click(region: str):
     """Handle region banner click (NEW FLOW - Level 3)"""
-    st.session_state.selected_region = region
-    print(f"[DEBUG] Region clicked: {region}")
+    try:
+        st.session_state.selected_region = region
+        print(f"[DEBUG] Region clicked: {region}")
+    except Exception as e:
+        st.error(f"❌ Error in on_region_click: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def on_breakdown_click(category: str):

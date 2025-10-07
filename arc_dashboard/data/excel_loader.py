@@ -54,6 +54,7 @@ def load_arc_data_from_excel():
     # Column mapping as per requirements
     column_mapping = {
         'Assignee': 'Assigned To',
+        'Implementation Type': 'Type of Implementation',  # Excel has "Implementation Type", code expects "Type of Implementation"
         'Parts - Status': 'Parts Status',
         'Service - Status': 'Service Status',
         'Accounting - Status': 'Accounting Status'

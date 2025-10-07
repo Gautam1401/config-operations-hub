@@ -54,7 +54,9 @@ def load_integration_data_from_excel():
 
     # Column mapping as per requirements
     column_mapping = {
-        'Vendor List Updated': 'Status'
+        'Vendor List Updated': 'Status',
+        'Implementation Type': 'Type of Implementation',  # Excel has "Implementation Type", code expects "Type of Implementation"
+        'Assignee': 'Assigned To'  # Excel has "Assignee", code expects "Assigned To"
     }
 
     # Columns to keep (including those that don't need renaming)
