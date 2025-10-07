@@ -88,6 +88,10 @@ def main():
                 del st.session_state[key]
             st.rerun()
     
+    # Display version at bottom of sidebar
+    st.markdown("---")
+    st.caption(f"🔄 Version: {__version__} | Updated: {__last_updated__}")
+    
     # === MAIN CONTENT ===
     
     # Check if admin panel should be shown
