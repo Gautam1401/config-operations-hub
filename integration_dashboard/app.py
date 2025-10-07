@@ -25,6 +25,11 @@ from shared.styles import (
 )
 
 
+
+# Dashboard Version
+__version__ = "1.0.3"
+__last_updated__ = "2025-10-07 19:44:03 IST"
+
 def initialize_session_state():
     """Initialize session state variables for Integration dashboard"""
 

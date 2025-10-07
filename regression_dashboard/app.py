@@ -22,6 +22,11 @@ from shared.styles import apply_modern_styles
 # SESSION STATE INITIALIZATION
 # ============================================================================
 
+
+# Dashboard Version
+__version__ = "1.0.2"
+__last_updated__ = "2025-10-07 19:44:03 IST"
+
 def initialize_session_state():
     """Initialize session state variables"""
     if 'regression_selected_kpi' not in st.session_state:
