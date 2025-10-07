@@ -1,20 +1,31 @@
 """
 Excel Data Loader for Integration Dashboard
-Loads data from local Excel file
+Loads data from local Excel file and combines all month sheets
 """
 
 import pandas as pd
-import os
-from pathlib import Path
+from datetime import datetime
 from shared.data_paths import get_excel_file_path, INTEGRATION_FILE
 
 
 def load_integration_data_from_excel():
     """
-    Load Integration data from Excel file (combines all sheets)
+    Load Integration data from Excel file
+    Combines all month sheets into one dataset
+
+    Column Mapping:
+    - Dealership Name → Dealership Name
+    - Go Live Date → Go Live Date
+    - Days to Go Live → Days to Go Live (already calculated in Excel)
+    - PEM → PEM
+    - Director → Director
+    - Implementation Type → Implementation Type
+    - Region → Region (with "ALL" option)
+    - Assignee → Assignee
+    - Vendor List Updated → Status
 
     Returns:
-        pd.DataFrame: Integration access board data with standardized columns
+        pd.DataFrame: Integration data with standardized column names
     """
     # Get path from centralized config
     excel_path = get_excel_file_path(INTEGRATION_FILE)
@@ -22,65 +33,76 @@ def load_integration_data_from_excel():
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")
 
-    # Read ALL sheets from the Excel file
+    # Read all sheets and combine them
     xl = pd.ExcelFile(excel_path)
-
-    print(f"[DEBUG Integration Loader] Found {len(xl.sheet_names)} sheets: {xl.sheet_names}")
-
-    # Read and combine all sheets
     all_data = []
+
+    print(f"[INFO Integration Loader] Found sheets: {xl.sheet_names}")
+
     for sheet_name in xl.sheet_names:
         df_sheet = pd.read_excel(excel_path, sheet_name=sheet_name)
-        print(f"[DEBUG Integration Loader] Sheet '{sheet_name}': {len(df_sheet)} rows")
+        print(f"[INFO Integration Loader] Sheet '{sheet_name}': {len(df_sheet)} rows")
         all_data.append(df_sheet)
 
     # Combine all sheets
     df = pd.concat(all_data, ignore_index=True)
 
-    print(f"[DEBUG Integration Loader] Combined data: {len(df)} rows")
-
-    # Standardize column names - strip trailing/leading spaces
+    # Standardize column names - strip whitespace
     df.columns = df.columns.str.strip()
 
-    print(f"[DEBUG Integration Loader] Loaded {len(df)} rows")
-    print(f"[DEBUG Integration Loader] Columns after strip: {df.columns.tolist()}")
+    print(f"[INFO Integration Loader] Combined data: {len(df)} rows")
 
-    # Map to expected column names
+    # Column mapping as per requirements
     column_mapping = {
-        'Assigned to': 'Assigned To',
-        'OEM Tasks Completed': 'OEM Tasks Completed',
-        'Integration to Be Launched': 'Integration to Be Launched',
-        'Comments': 'Comments'
+        'Vendor List Updated': 'Status'
     }
 
+    # Columns to keep (including those that don't need renaming)
+    columns_to_keep = [
+        'Dealership Name',
+        'Go Live Date',
+        'Days to Go Live',
+        'PEM',
+        'Director',
+        'Implementation Type',
+        'Region',
+        'Assignee',
+        'Vendor List Updated'
+    ]
+
+    # Only keep columns that exist
+    existing_cols = [col for col in columns_to_keep if col in df.columns]
+    df = df[existing_cols]
+    
+    # Rename columns
     df.rename(columns=column_mapping, inplace=True)
 
-    print(f"[DEBUG Integration Loader] Columns after mapping: {df.columns.tolist()}")
+    print(f"[INFO Integration Loader] Columns after mapping: {df.columns.tolist()}")
 
-    # Keep 'Dealer Name' and 'Dealer ID' for the data processor to combine later
-
-    # Standardize text values
+    # Standardize values (trim spaces)
     for col in df.columns:
         if df[col].dtype == 'object':
             df[col] = df[col].astype(str).str.strip()
-            # Replace 'nan' string with actual NaN
-            df[col] = df[col].replace(['nan', 'NaN', 'None', ''], pd.NA)
 
-    # Standardize Region - Capitalize first letter
-    if 'Region' in df.columns:
-        # Capitalize first letter of each word
-        df['Region'] = df['Region'].str.title()
+    # Convert Go Live Date to datetime
+    if 'Go Live Date' in df.columns:
+        df['Go Live Date'] = pd.to_datetime(df['Go Live Date'], errors='coerce')
 
-        # Handle specific region mappings
-        region_mapping = {
-            'Usa East': 'USA East',
-            'Usa West': 'USA West',
-            'Usa West And Central': 'USA West and Central',
-            'Mid Market': 'Mid Market',
-            'Enterprise': 'Enterprise',
-            'Canada': 'Canada',
-        }
-        df['Region'] = df['Region'].replace(region_mapping)
+    # Days to Go Live is already in Excel, but recalculate to ensure consistency
+    today = datetime.now()
+    if 'Go Live Date' in df.columns:
+        df['Days to Go Live'] = (df['Go Live Date'] - today).dt.days
+        # If Days to Go Live < 0, mark as "Rolled Out"
+        df['Days to Go Live Display'] = df['Days to Go Live'].apply(
+            lambda x: 'Rolled Out' if pd.notna(x) and x < 0 else (str(int(x)) if pd.notna(x) else '')
+        )
+
+    # Handle NA/blank values - replace with pd.NA
+    na_values = ['nan', 'NA', 'N/A', 'na', 'n/a', '', 'None']
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].replace(na_values, pd.NA)
+
+    print(f"[INFO Integration Loader] Final data shape: {df.shape}")
 
     return df
-

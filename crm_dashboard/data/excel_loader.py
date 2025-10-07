@@ -4,8 +4,7 @@ Loads data from local Excel file and combines all month sheets
 """
 
 import pandas as pd
-import os
-from pathlib import Path
+from datetime import datetime
 from shared.data_paths import get_excel_file_path, CRM_FILE
 
 
@@ -13,6 +12,23 @@ def load_crm_data_from_excel():
     """
     Load CRM Configuration data from Excel file
     Combines all month sheets into one dataset
+
+    Column Mapping:
+    - Dealership Name → Dealership Name
+    - Implementation Type → Implementation Type
+    - Region → Region (with "ALL" option)
+    - Go Live Date → Go Live Date
+    - Days to Go Live → Calculated (Go Live Date - Today, if <0 then "Rolled Out")
+    - Configuration - Assigned → Configuration Assignee
+    - Configuration - Status → Configuration Status
+    - Pre Go Live - Assigned to → Pre Go Live Assignee
+    - Pre Go Live - Domain Updated → Pre Go Live Domain Updated
+    - Pre Go Live - Set Up Check → Pre Go Live Set Up Check
+    - Go Live Testing - Assigned To → Go Live Testing Assignee
+    - Go Live Testing - Sample ADF → Sample ADF
+    - Go Live Testing - Inbound Email Test → Inbound Email
+    - Go Live Testing - Outbound Mail Test → Outbound Email
+    - Go Live Testing - Data Migration Test → Data Migration
 
     Returns:
         pd.DataFrame: CRM configuration data with standardized column names
@@ -27,11 +43,11 @@ def load_crm_data_from_excel():
     xl = pd.ExcelFile(excel_path)
     all_data = []
 
-    print(f"[DEBUG CRM Loader] Found sheets: {xl.sheet_names}")
+    print(f"[INFO CRM Loader] Found sheets: {xl.sheet_names}")
 
     for sheet_name in xl.sheet_names:
         df_sheet = pd.read_excel(excel_path, sheet_name=sheet_name)
-        print(f"[DEBUG CRM Loader] Sheet '{sheet_name}': {len(df_sheet)} rows")
+        print(f"[INFO CRM Loader] Sheet '{sheet_name}': {len(df_sheet)} rows")
         all_data.append(df_sheet)
 
     # Combine all sheets
@@ -40,75 +56,73 @@ def load_crm_data_from_excel():
     # Standardize column names - strip whitespace
     df.columns = df.columns.str.strip()
 
-    print(f"[DEBUG CRM Loader] Combined data: {len(df)} rows")
-    print(f"[DEBUG CRM Loader] Columns in Excel: {df.columns.tolist()}")
+    print(f"[INFO CRM Loader] Combined data: {len(df)} rows")
 
-    # Map to expected column names
-    # Note: 'Dealership Name', 'Go Live Date', and 'Implementation Type' are already correct in updated Excel
+    # Column mapping as per requirements - keep original names that don't need mapping
     column_mapping = {
+        'Configuration - Assigned': 'Configuration Assignee',
         'Configuration - Status': 'Configuration Status',
-        'Configuration - Assigned': 'Configuration Assigned',
-        'Pre Go Live - Assigned to': 'Pre Go Live Assigned',
-        'Pre Go Live - Domain Updated': 'Domain Updated',
-        'Pre Go Live - Set Up Check': 'Set Up Check',
-        'Go Live Testing - Assigned To': 'Go Live Testing Assigned',
+        'Pre Go Live - Assigned to': 'Pre Go Live Assignee',
+        'Pre Go Live - Domain Updated': 'Pre Go Live Domain Updated',
+        'Pre Go Live - Set Up Check': 'Pre Go Live Set Up Check',
+        'Go Live Testing - Assigned To': 'Go Live Testing Assignee',
         'Go Live Testing - Sample ADF': 'Sample ADF',
         'Go Live Testing - Inbound Email Test': 'Inbound Email',
         'Go Live Testing - Outbound Mail Test': 'Outbound Email',
         'Go Live Testing - Data Migration Test': 'Data Migration'
     }
 
+    # Columns to keep (including those that don't need renaming)
+    columns_to_keep = [
+        'Dealership Name',
+        'Implementation Type',
+        'Region',
+        'Go Live Date',
+        'Configuration - Assigned',
+        'Configuration - Status',
+        'Pre Go Live - Assigned to',
+        'Pre Go Live - Domain Updated',
+        'Pre Go Live - Set Up Check',
+        'Go Live Testing - Assigned To',
+        'Go Live Testing - Sample ADF',
+        'Go Live Testing - Inbound Email Test',
+        'Go Live Testing - Outbound Mail Test',
+        'Go Live Testing - Data Migration Test'
+    ]
+
+    # Only keep columns that exist
+    existing_cols = [col for col in columns_to_keep if col in df.columns]
+    df = df[existing_cols]
+    
+    # Rename columns
     df.rename(columns=column_mapping, inplace=True)
 
-    print(f"[DEBUG CRM Loader] Columns after mapping: {df.columns.tolist()}")
+    print(f"[INFO CRM Loader] Columns after mapping: {df.columns.tolist()}")
 
-    # 'Dealership Name' is already combined in Excel (e.g., "Lewiston Auto Co., Inc. - 1067")
-    # 'Go Live Date' is already correct in Excel
-
-    # Standardize values (case-insensitive, trim spaces)
+    # Standardize values (trim spaces)
     for col in df.columns:
         if df[col].dtype == 'object':
             df[col] = df[col].astype(str).str.strip()
-            # Replace 'nan' string with actual NaN
-            df[col] = df[col].replace(['nan', 'NaN', 'None', ''], pd.NA)
 
-    # Standardize Configuration Status
-    if 'Configuration Status' in df.columns:
-        # Map variations to standard values (case-insensitive)
-        config_mapping = {
-            'standard configuration': 'Standard',
-            'stnadard configuration': 'Standard',  # Fix typo in data
-            'standard': 'Standard',
-            'copy store': 'Copy',
-            'copy': 'Copy',
-            'implementation': 'Implementation',
-            'custom': 'Implementation',
-            'not configured': 'Not Configured',
-        }
-        # Convert to lowercase for mapping, handle NaN
-        df['Configuration Status'] = df['Configuration Status'].fillna('').astype(str).str.lower().str.strip()
-        df['Configuration Status'] = df['Configuration Status'].replace(config_mapping)
-        # Replace empty strings with 'Not Configured'
-        df.loc[df['Configuration Status'] == '', 'Configuration Status'] = 'Not Configured'
+    # Convert Go Live Date to datetime
+    if 'Go Live Date' in df.columns:
+        df['Go Live Date'] = pd.to_datetime(df['Go Live Date'], errors='coerce')
 
-    # Standardize Region - Capitalize first letter
-    if 'Region' in df.columns:
-        # Capitalize first letter of each word
-        df['Region'] = df['Region'].str.title()
+    # Calculate Days to Go Live
+    today = datetime.now()
+    if 'Go Live Date' in df.columns:
+        df['Days to Go Live'] = (df['Go Live Date'] - today).dt.days
+        # If Days to Go Live < 0, mark as "Rolled Out"
+        df['Days to Go Live Display'] = df['Days to Go Live'].apply(
+            lambda x: 'Rolled Out' if pd.notna(x) and x < 0 else (str(int(x)) if pd.notna(x) else '')
+        )
 
-        # Handle specific region mappings
-        region_mapping = {
-            'Usa East': 'USA East',
-            'Usa West': 'USA West',
-            'Usa West And Central': 'USA West and Central',
-            'Mid Market': 'Mid Market',
-            'Enterprise': 'Enterprise',
-            'United Kingdom': 'United Kingdom',
-            'Canada': 'Canada',
-        }
-        df['Region'] = df['Region'].replace(region_mapping)
+    # Handle NA/blank values - replace with pd.NA
+    na_values = ['nan', 'NA', 'N/A', 'na', 'n/a', '', 'None']
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].replace(na_values, pd.NA)
 
-    print(f"[DEBUG CRM Loader] Final columns: {df.columns.tolist()}")
+    print(f"[INFO CRM Loader] Final data shape: {df.shape}")
 
     return df
-
