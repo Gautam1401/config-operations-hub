@@ -168,41 +168,45 @@ class IntegrationDataProcessor:
     def filter_by_date_range(self, date_filter: str) -> pd.DataFrame:
         """
         Filter data by date range using exact calendar month logic
-        
+
         Args:
             date_filter: One of 'current_month', 'next_month', 'two_months', 'ytd'
-            
+
         Returns:
             Filtered DataFrame
         """
         today = pd.Timestamp.today()
-        
+
         if date_filter == 'current_month':
             # Current Month: Exact month and year match
-            m, y = today.month, today.year
-            filtered = self.df[(self.df['Go Live Month'] == m) & (self.df['Go Live Year'] == y)].copy()
-            print(f"[DEBUG Integration Processor] Current Month: {m}/{y}")
-        
+            mask = (self.df['Go Live Date'].dt.month == today.month) & \
+                   (self.df['Go Live Date'].dt.year == today.year)
+            filtered = self.df[mask].copy()
+            print(f"[DEBUG Integration Processor] Current Month: {today.month}/{today.year}")
+
         elif date_filter == 'next_month':
-            # Next Month: Exact next month and year match
-            next_date = today + pd.DateOffset(months=1)
-            m, y = next_date.month, next_date.year
-            filtered = self.df[(self.df['Go Live Month'] == m) & (self.df['Go Live Year'] == y)].copy()
-            print(f"[DEBUG Integration Processor] Next Month: {m}/{y}")
-        
+            # Next Month: Calculate next month and year
+            next_month = (today.month % 12) + 1
+            next_month_year = today.year if today.month < 12 else today.year + 1
+            mask = (self.df['Go Live Date'].dt.month == next_month) & \
+                   (self.df['Go Live Date'].dt.year == next_month_year)
+            filtered = self.df[mask].copy()
+            print(f"[DEBUG Integration Processor] Next Month: {next_month}/{next_month_year}")
+
         elif date_filter == 'two_months':
-            # 2 Months From Now: Exact 2-months-ahead month and year match
-            two_months_date = today + pd.DateOffset(months=2)
-            m, y = two_months_date.month, two_months_date.year
-            filtered = self.df[(self.df['Go Live Month'] == m) & (self.df['Go Live Year'] == y)].copy()
-            print(f"[DEBUG Integration Processor] 2 Months From Now: {m}/{y}")
-        
+            # 2 Months From Now: Calculate 2 months ahead
+            two_months_ahead = (today.month + 1) % 12 + 1
+            two_months_year = today.year if today.month < 11 else today.year + 1
+            mask = (self.df['Go Live Date'].dt.month == two_months_ahead) & \
+                   (self.df['Go Live Date'].dt.year == two_months_year)
+            filtered = self.df[mask].copy()
+            print(f"[DEBUG Integration Processor] 2 Months From Now: {two_months_ahead}/{two_months_year}")
+
         elif date_filter == 'ytd':
-            # YTD: All rows in the current year
-            y = today.year
-            filtered = self.df[self.df['Go Live Year'] == y].copy()
-            print(f"[DEBUG Integration Processor] YTD: Year {y}")
-        
+            # YTD: All data (entire dataset - past, present, and future)
+            filtered = self.df.copy()
+            print(f"[DEBUG Integration Processor] YTD: All data ({len(filtered)} records)")
+
         else:
             filtered = self.df.copy()
         

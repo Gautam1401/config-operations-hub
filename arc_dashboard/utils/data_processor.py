@@ -61,35 +61,34 @@ class ARCDataProcessor:
 
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by date range
-        
+        Filter data by date range using exact calendar month logic
+
         Args:
             filter_type: 'current_month', 'next_month', or 'ytd'
-            
+
         Returns:
             pd.DataFrame: Filtered data
         """
-        today = datetime.now()
-        
+        today = pd.Timestamp.today()
+
         if filter_type == 'current_month':
-            # Current month
-            mask = (self.df['Month'] == today.month) & (self.df['Year'] == today.year)
+            # Current Month: Exact month and year match
+            mask = (self.df['Go Live Date'].dt.month == today.month) & \
+                   (self.df['Go Live Date'].dt.year == today.year)
             return self.df[mask].copy()
-            
+
         elif filter_type == 'next_month':
-            # Next month
-            next_month = today.month + 1 if today.month < 12 else 1
-            next_year = today.year if today.month < 12 else today.year + 1
-            mask = (self.df['Month'] == next_month) & (self.df['Year'] == next_year)
+            # Next Month: Calculate next month and year
+            next_month = (today.month % 12) + 1
+            next_month_year = today.year if today.month < 12 else today.year + 1
+            mask = (self.df['Go Live Date'].dt.month == next_month) & \
+                   (self.df['Go Live Date'].dt.year == next_month_year)
             return self.df[mask].copy()
-            
+
         elif filter_type == 'ytd':
-            # Year to date (from Jan 1 to today)
-            start_of_year = datetime(today.year, 1, 1)
-            mask = (self.df['Go Live Date'] >= pd.Timestamp(start_of_year)) & \
-                   (self.df['Go Live Date'] <= pd.Timestamp(today))
-            return self.df[mask].copy()
-        
+            # YTD: All data (entire dataset - past, present, and future)
+            return self.df.copy()
+
         else:
             return self.df.copy()
     

@@ -209,33 +209,38 @@ class CRMDataProcessor:
     
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by date range
-        
+        Filter data by date range using exact calendar month logic
+
         Args:
             filter_type: 'current_month', 'next_month', or 'ytd'
-            
+
         Returns:
             pd.DataFrame: Filtered data
         """
-        today = datetime.now()
-        
+        today = pd.Timestamp.today()
+
         if filter_type == 'current_month':
-            filtered = self.df[
-                (self.df['Month'] == today.month) & 
-                (self.df['Year'] == today.year)
-            ].copy()
+            # Current Month: Exact month and year match
+            mask = (self.df['Go Live Date'].dt.month == today.month) & \
+                   (self.df['Go Live Date'].dt.year == today.year)
+            filtered = self.df[mask].copy()
+
         elif filter_type == 'next_month':
-            next_month = today.month + 1 if today.month < 12 else 1
-            next_year = today.year if today.month < 12 else today.year + 1
-            filtered = self.df[
-                (self.df['Month'] == next_month) & 
-                (self.df['Year'] == next_year)
-            ].copy()
+            # Next Month: Calculate next month and year
+            next_month = (today.month % 12) + 1
+            next_month_year = today.year if today.month < 12 else today.year + 1
+            mask = (self.df['Go Live Date'].dt.month == next_month) & \
+                   (self.df['Go Live Date'].dt.year == next_month_year)
+            filtered = self.df[mask].copy()
+
         elif filter_type == 'ytd':
-            filtered = self.df[self.df['Year'] == today.year].copy()
-        else:
+            # YTD: All data (entire dataset - past, present, and future)
             filtered = self.df.copy()
-        
+
+        else:
+            # All data
+            filtered = self.df.copy()
+
         print(f"[DEBUG CRMDataProcessor] Filtered by {filter_type}: {len(filtered)} records")
         return filtered
     
