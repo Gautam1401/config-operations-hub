@@ -58,8 +58,8 @@ except:
 
 
 # Dashboard Version
-__version__ = "1.0.5"
-__last_updated__ = "2025-10-07 20:09:37 IST"
+__version__ = "1.0.6"
+__last_updated__ = "2025-10-07 20:49:54 IST"
 
 def initialize_session_state():
     """Initialize session state variables - NEW FLOW: Module → KPI → Region → Table"""
