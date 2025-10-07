@@ -37,15 +37,15 @@ def load_crm_data_from_excel():
     # Combine all sheets
     df = pd.concat(all_data, ignore_index=True)
 
-    # Standardize column names
+    # Standardize column names - strip whitespace
     df.columns = df.columns.str.strip()
 
     print(f"[DEBUG CRM Loader] Combined data: {len(df)} rows")
-    print(f"[DEBUG CRM Loader] Columns: {df.columns.tolist()}")
+    print(f"[DEBUG CRM Loader] Columns in Excel: {df.columns.tolist()}")
 
-    # Map to expected column names (keep Dealer Name for data processor)
+    # Map to expected column names
+    # Note: 'Dealership Name', 'Go Live Date', and 'Implementation Type' are already correct in updated Excel
     column_mapping = {
-        'Go Live': 'Go Live Date',
         'Configuration - Status': 'Configuration Status',
         'Configuration - Assigned': 'Configuration Assigned',
         'Pre Go Live - Assigned to': 'Pre Go Live Assigned',
@@ -60,7 +60,10 @@ def load_crm_data_from_excel():
 
     df.rename(columns=column_mapping, inplace=True)
 
-    # Keep both 'Dealer Name' and 'Dealer ID' for the data processor to combine later
+    print(f"[DEBUG CRM Loader] Columns after mapping: {df.columns.tolist()}")
+
+    # 'Dealership Name' is already combined in Excel (e.g., "Lewiston Auto Co., Inc. - 1067")
+    # 'Go Live Date' is already correct in Excel
 
     # Standardize values (case-insensitive, trim spaces)
     for col in df.columns:
@@ -71,18 +74,22 @@ def load_crm_data_from_excel():
 
     # Standardize Configuration Status
     if 'Configuration Status' in df.columns:
-        # Map variations to standard values
+        # Map variations to standard values (case-insensitive)
         config_mapping = {
             'standard configuration': 'Standard',
-            'stnadard configuration': 'Standard',  # Fix typo
+            'stnadard configuration': 'Standard',  # Fix typo in data
             'standard': 'Standard',
             'copy store': 'Copy',
             'copy': 'Copy',
+            'implementation': 'Implementation',
+            'custom': 'Implementation',
             'not configured': 'Not Configured',
         }
-        df['Configuration Status'] = df['Configuration Status'].str.lower().replace(config_mapping)
-        # Replace NaN with 'Not Configured'
-        df['Configuration Status'] = df['Configuration Status'].fillna('Not Configured')
+        # Convert to lowercase for mapping, handle NaN
+        df['Configuration Status'] = df['Configuration Status'].fillna('').astype(str).str.lower().str.strip()
+        df['Configuration Status'] = df['Configuration Status'].replace(config_mapping)
+        # Replace empty strings with 'Not Configured'
+        df.loc[df['Configuration Status'] == '', 'Configuration Status'] = 'Not Configured'
 
     # Standardize Region - Capitalize first letter
     if 'Region' in df.columns:
