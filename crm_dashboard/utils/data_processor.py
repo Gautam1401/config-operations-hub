@@ -112,12 +112,12 @@ class CRMDataProcessor:
         def get_pre_go_live_status(row):
             # Data Incorrect: Go Live Status is 'Rolled out' but both checks are blank/None
             if pd.notna(row['Go Live Status']) and row['Go Live Status'] == 'Rolled out':
-                if (pd.isna(row['Domain Updated']) or row['Domain Updated'] == '') and \
-                   (pd.isna(row['Set Up Check']) or row['Set Up Check'] == ''):
+                if (pd.isna(row['Pre Go Live Domain Updated']) or row['Pre Go Live Domain Updated'] == '') and \
+                   (pd.isna(row['Pre Go Live Set Up Check']) or row['Pre Go Live Set Up Check'] == ''):
                     return 'Data Incorrect'
             
-            domain = row['Domain Updated']
-            setup = row['Set Up Check']
+            domain = row['Pre Go Live Domain Updated']
+            setup = row['Pre Go Live Set Up Check']
             
             # Both blank/NA -> Not started
             if (pd.isna(domain) or domain == '') and (pd.isna(setup) or setup == ''):
@@ -265,6 +265,9 @@ class CRMDataProcessor:
 
         # Get unique regions, excluding NaN values
         regions = df['Region'].dropna().unique().tolist()
+        # Add 'ALL' option to regions
+        if 'ALL' not in regions:
+            regions.insert(0, 'ALL')
         print(f"[DEBUG CRM] Regions extracted: {regions}")
 
         # If no regions found, return default
@@ -381,7 +384,7 @@ class CRMDataProcessor:
         
         # Determine assignee column based on sub-tab
         assignee_col_map = {
-            'configuration': 'Configuration Assigned',
+            'configuration': 'Configuration Assignee',
             'pre_go_live': 'Pre Go Live Assigned',
             'go_live_testing': 'Go Live Testing Assigned',
         }

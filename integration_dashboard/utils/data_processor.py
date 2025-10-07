@@ -48,15 +48,14 @@ class IntegrationDataProcessor:
 
         # Check for required columns and add defaults if missing
         required_cols = {
-            'Go Live Date': None,
-            'Dealer Name': '',
-            'Dealer ID': '',
-            'Type of Implementation': '',
-            'Vendor List Updated': '',
-            'PEM': '',
-            'Director': '',
-            'Assigned To': '',
-            'Region': ''
+    'Go Live Date': None,
+    'Dealership Name': '',  # Already provided by loader
+    'Implementation Type': '',  # Renamed from 'Type of Implementation'
+    'Status': '',  # Renamed from 'Vendor List Updated'
+    'PEM': '',
+    'Director': '',
+    'Assignee': '',  # Renamed from 'Assigned To'
+    'Region': ''
         }
 
         for col, default_val in required_cols.items():
@@ -75,19 +74,14 @@ class IntegrationDataProcessor:
         today = pd.Timestamp.now().normalize()
         df['Days to Go Live'] = (df['Go Live Date'] - today).dt.days
 
-        # Create Dealership Name (Dealer Name - Dealer ID)
-        df['Dealership Name'] = df.apply(
-            lambda row: f"{row['Dealer Name']} - {row['Dealer ID']}"
-            if pd.notna(row['Dealer Name']) and pd.notna(row['Dealer ID'])
-            else '',
-            axis=1
-        )
+        # Dealership Name already provided by loader - no need to create
+
 
         # Calculate Status
         df['Status'] = df.apply(self._calculate_status, axis=1)
 
         # Check for Data Incomplete
-        df['Is Data Incomplete'] = df.apply(self._is_data_incomplete, axis=1)
+        # df['Is Data Incomplete'] = df.apply(self._is_data_incomplete, axis=1)  # Removed - no longer needed
 
         print(f"[DEBUG Integration Processor] Data prepared: {len(df)} records")
         print(f"[DEBUG Integration Processor] Final columns: {df.columns.tolist()}")
@@ -106,10 +100,10 @@ class IntegrationDataProcessor:
         """
         # Check for Data Incomplete first
         if self._is_data_incomplete(row):
-            return 'Data Incomplete'
+            pass  # Data Incomplete removed
 
         # Safely get Vendor List Updated value
-        vendor_list_updated = row.get('Vendor List Updated', '')
+        vendor_list_updated = row.get('Status', '')
 
         # GTG: Vendor List Updated = 'Yes'
         if pd.notna(vendor_list_updated) and str(vendor_list_updated).strip().lower() == 'yes':
@@ -117,19 +111,19 @@ class IntegrationDataProcessor:
 
         # For other statuses, Vendor List Updated must be 'No'
         if pd.isna(vendor_list_updated) or str(vendor_list_updated).strip().lower() != 'no':
-            return 'Data Incomplete'
+            pass  # Data Incomplete removed
 
         # Get implementation type and days to go live
-        impl_type = row.get('Type of Implementation', '')
+        impl_type = row.get('Implementation Type', '')
         days = row.get('Days to Go Live', 0)
 
         # Handle missing implementation type
         if pd.isna(impl_type) or impl_type == '':
-            return 'Data Incomplete'
+            pass  # Data Incomplete removed
 
         # Handle NaN days
         if pd.isna(days):
-            return 'Data Incomplete'
+            pass  # Data Incomplete removed
 
         # Handle rolled out (negative days)
         if days < 0:
@@ -301,6 +295,9 @@ class IntegrationDataProcessor:
 
         # Get unique regions, excluding NaN values
         regions = df['Region'].dropna().unique().tolist()
+        # Add 'ALL' option to regions
+        if 'ALL' not in regions:
+            regions.insert(0, 'ALL')
         print(f"[DEBUG Integration] Regions extracted: {regions}")
 
         # If no regions found, return default

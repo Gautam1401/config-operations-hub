@@ -196,6 +196,9 @@ class ARCDataProcessor:
 
         # Get unique regions, excluding NaN values
         regions = df['Region'].dropna().unique().tolist()
+        # Add 'ALL' option to regions
+        if 'ALL' not in regions:
+            regions.insert(0, 'ALL')
         print(f"[DEBUG ARC] Regions extracted: {regions}")
 
         # If no regions found, return default
