@@ -6,6 +6,7 @@ Loads data from local Excel file and combines all month sheets
 import pandas as pd
 import os
 from pathlib import Path
+from shared.data_paths import get_excel_file_path, CRM_FILE
 
 
 def load_crm_data_from_excel():
@@ -16,8 +17,8 @@ def load_crm_data_from_excel():
     Returns:
         pd.DataFrame: CRM configuration data with standardized column names
     """
-    # Point to Data Source folder on Desktop
-    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "CRM Data.xlsx"
+    # Get path from centralized config
+    excel_path = get_excel_file_path(CRM_FILE)
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")

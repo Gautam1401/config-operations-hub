@@ -6,6 +6,7 @@ Loads data from local Excel file and transforms to long format
 import pandas as pd
 import os
 from pathlib import Path
+from shared.data_paths import get_excel_file_path, ARC_FILE
 
 
 def load_arc_data_from_excel():
@@ -27,8 +28,8 @@ def load_arc_data_from_excel():
     """
     from datetime import datetime
 
-    # Point to Data Source folder on Desktop
-    excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "ARC Configurations.xlsx"
+    # Get path from centralized config
+    excel_path = get_excel_file_path(ARC_FILE)
 
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")

@@ -48,7 +48,8 @@ def initialize_session_state():
 def get_excel_last_modified() -> str:
     """Get the last modified time of the Excel file"""
     try:
-        excel_path = Path.home() / "Desktop" / "Operations Hub" / "Data Source" / "Integration Access Board.xlsx"
+        from shared.data_paths import get_excel_file_path, INTEGRATION_FILE
+        excel_path = get_excel_file_path(INTEGRATION_FILE)
 
         if excel_path.exists():
             mod_time = os.path.getmtime(excel_path)
