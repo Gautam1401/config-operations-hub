@@ -44,18 +44,25 @@ def initialize_session_state():
           f"Region={st.session_state.crm_selected_region}")
 
 
+@st.cache_data(ttl=300, show_spinner=False)
 def load_data() -> CRMDataProcessor:
     """Load and process CRM data"""
-    
-    df = load_crm_data()
-    df.columns = df.columns.str.strip()
-    
-    if USE_MOCK_DATA:
+
+    try:
+        df = load_crm_data()
+        df.columns = df.columns.str.strip()
+
         print(f"[DEBUG CRM] Loaded data columns: {df.columns.tolist()}")
         print(f"[DEBUG CRM] Data shape: {df.shape}")
-    
-    processor = CRMDataProcessor(df)
-    return processor
+
+        processor = CRMDataProcessor(df)
+        return processor
+    except Exception as e:
+        st.error(f"❌ Error loading CRM data: {str(e)}")
+        print(f"[ERROR CRM] Failed to load data: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def render_date_filter():
