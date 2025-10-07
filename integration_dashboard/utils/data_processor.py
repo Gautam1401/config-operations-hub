@@ -271,7 +271,7 @@ class IntegrationDataProcessor:
             'Critical': len(df[df['Status'] == 'Critical']),
             'Escalated': len(df[df['Status'] == 'Escalated']),
             'Upcoming Week': upcoming_week_count,
-            'Data Incomplete': len(df[df['Status'] == 'Data Incomplete'])
+            # 'Data Incomplete': removed
         }
         
         print(f"[DEBUG Integration Processor] KPIs: {kpis}")

@@ -90,7 +90,7 @@ def render_status_breakdown(df: pd.DataFrame):
     status_counts = df['Status'].value_counts()
     
     # Create columns for status cards
-    statuses = ['GTG', 'On Track', 'Critical', 'Escalated', 'Data Incomplete']
+    statuses = ['GTG', 'On Track', 'Critical', 'Escalated']
     available_statuses = [s for s in statuses if s in status_counts.index]
     
     if not available_statuses:

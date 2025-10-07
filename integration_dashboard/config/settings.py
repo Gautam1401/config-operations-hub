@@ -52,7 +52,6 @@ KPI_DEFINITIONS = {
     'On Track': 'Vendor List Updated = No and within safe timeframe',
     'Critical': 'Vendor List Updated = No and approaching deadline',
     'Escalated': 'Vendor List Updated = No and past safe deadline',
-    'Data Incomplete': 'Missing key data fields'
 }
 
 # ============================================================================
@@ -75,7 +74,6 @@ STATUS_COLORS = {
     'On Track': '#3874F2',      # Blue
     'Critical': '#FF9800',      # Orange
     'Escalated': '#F44336',     # Red
-    'Data Incomplete': '#23272F' # Grey
 }
 
 # KPI color mapping
@@ -86,7 +84,6 @@ KPI_COLORS = {
     'Critical': 'kpi-warning',
     'Escalated': 'kpi-error',
     'Upcoming Week': 'kpi-info',
-    'Data Incomplete': 'kpi-grey'
 }
 
 # ============================================================================
