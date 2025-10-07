@@ -6,6 +6,9 @@ import streamlit as st
 import pandas as pd
 from typing import Optional
 import datetime
+import os
+import time
+from pathlib import Path
 
 from integration_dashboard.data.mock_data import load_integration_data
 from integration_dashboard.utils.data_processor import IntegrationDataProcessor
@@ -24,32 +27,60 @@ from shared.styles import (
 
 def initialize_session_state():
     """Initialize session state variables for Integration dashboard"""
-    
+
     if 'integration_date_filter' not in st.session_state:
         st.session_state.integration_date_filter = 'current_month'
-    
+
     if 'integration_selected_kpi' not in st.session_state:
         st.session_state.integration_selected_kpi = None
-    
+
     if 'integration_selected_region' not in st.session_state:
         st.session_state.integration_selected_region = None
-    
+
+    if 'integration_data_processor' not in st.session_state:
+        st.session_state.integration_data_processor = None
+
     print(f"[DEBUG Integration] Session State: date_filter={st.session_state.integration_date_filter}, "
           f"KPI={st.session_state.integration_selected_kpi}, "
           f"Region={st.session_state.integration_selected_region}")
 
 
-def load_data() -> IntegrationDataProcessor:
+def get_excel_last_modified() -> str:
+    """Get the last modified time of the Excel file"""
+    try:
+        project_root = Path(__file__).parent.parent
+        excel_path = project_root / "data" / "Integration Access Board.xlsx"
+
+        if excel_path.exists():
+            mod_time = os.path.getmtime(excel_path)
+            return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mod_time))
+        else:
+            return "File not found"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def load_data(force_reload: bool = False) -> IntegrationDataProcessor:
     """Load and process Integration data"""
-    
+
+    # Check if we should use cached data
+    if not force_reload and st.session_state.integration_data_processor is not None:
+        print("[DEBUG Integration] Using cached data processor")
+        return st.session_state.integration_data_processor
+
+    print("[DEBUG Integration] Loading fresh data from Excel")
     df = load_integration_data()
     df.columns = df.columns.str.strip()
-    
+
     if USE_MOCK_DATA:
         print(f"[DEBUG Integration] Loaded data columns: {df.columns.tolist()}")
         print(f"[DEBUG Integration] Data shape: {df.shape}")
-    
+
     processor = IntegrationDataProcessor(df)
+
+    # Cache the processor
+    st.session_state.integration_data_processor = processor
+
     return processor
 
 
@@ -178,9 +209,24 @@ def handle_region_click(region_counts: dict):
 
 def render_data_tab(processor: IntegrationDataProcessor):
     """Render Data tab with sub-tabs"""
-    
+
+    # Show Excel last modified time and reload button
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        last_modified = get_excel_last_modified()
+        st.caption(f"📄 Excel last modified: **{last_modified}**")
+    with col2:
+        if st.button("🔄 Reload Latest Data", help="Reload data from Excel file"):
+            st.session_state.integration_data_processor = None
+            st.session_state.integration_selected_kpi = None
+            st.session_state.integration_selected_region = None
+            st.success("✅ Data reloaded successfully!")
+            st.rerun()
+
+    st.markdown("---")
+
     render_date_filter()
-    
+
     # Filter by date range using exact calendar month logic
     filtered_df = processor.filter_by_date_range(st.session_state.integration_date_filter)
     
