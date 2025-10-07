@@ -44,9 +44,10 @@ Thumbs.db
 .streamlit/
 
 # Data files (if you want to keep data private)
-*.xlsx
-*.csv
-*.xls
+# Allow Excel files in Data Source folder (needed for Streamlit Cloud)
+# *.xlsx
+# *.csv
+# *.xls
 
 # Logs
 *.log
