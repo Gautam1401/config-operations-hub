@@ -34,113 +34,142 @@ class IntegrationDataProcessor:
     def _prepare_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Prepare and clean data
-        
+
         Args:
             df: Raw data
-            
+
         Returns:
             Cleaned and processed DataFrame
         """
         df = df.copy()
-        
+
+        # Print available columns for debugging
+        print(f"[DEBUG Integration Processor] Available columns: {df.columns.tolist()}")
+
+        # Check for required columns and add defaults if missing
+        required_cols = {
+            'Go Live Date': None,
+            'Dealer Name': '',
+            'Dealer ID': '',
+            'Type of Implementation': '',
+            'Vendor List Updated': '',
+            'PEM': '',
+            'Director': '',
+            'Assigned To': '',
+            'Region': ''
+        }
+
+        for col, default_val in required_cols.items():
+            if col not in df.columns:
+                print(f"[WARNING] Column '{col}' not found, adding with default value")
+                df[col] = default_val
+
         # Convert Go Live Date to datetime
         df['Go Live Date'] = pd.to_datetime(df['Go Live Date'], errors='coerce')
-        
+
         # Extract month and year for filtering
         df['Go Live Month'] = df['Go Live Date'].dt.month
         df['Go Live Year'] = df['Go Live Date'].dt.year
-        
+
         # Calculate Days to Go Live
         today = pd.Timestamp.now().normalize()
         df['Days to Go Live'] = (df['Go Live Date'] - today).dt.days
-        
+
         # Create Dealership Name (Dealer Name - Dealer ID)
         df['Dealership Name'] = df.apply(
-            lambda row: f"{row['Dealer Name']} - {row['Dealer ID']}" 
+            lambda row: f"{row['Dealer Name']} - {row['Dealer ID']}"
             if pd.notna(row['Dealer Name']) and pd.notna(row['Dealer ID'])
             else '',
             axis=1
         )
-        
+
         # Calculate Status
         df['Status'] = df.apply(self._calculate_status, axis=1)
-        
+
         # Check for Data Incomplete
         df['Is Data Incomplete'] = df.apply(self._is_data_incomplete, axis=1)
-        
+
         print(f"[DEBUG Integration Processor] Data prepared: {len(df)} records")
-        print(f"[DEBUG Integration Processor] Columns: {df.columns.tolist()}")
-        
+        print(f"[DEBUG Integration Processor] Final columns: {df.columns.tolist()}")
+
         return df
     
     def _calculate_status(self, row) -> str:
         """
         Calculate status based on business rules
-        
+
         Args:
             row: DataFrame row
-            
+
         Returns:
             Status string
         """
         # Check for Data Incomplete first
         if self._is_data_incomplete(row):
             return 'Data Incomplete'
-        
+
+        # Safely get Vendor List Updated value
+        vendor_list_updated = row.get('Vendor List Updated', '')
+
         # GTG: Vendor List Updated = 'Yes'
-        if pd.notna(row['Vendor List Updated']) and row['Vendor List Updated'] == 'Yes':
+        if pd.notna(vendor_list_updated) and str(vendor_list_updated).strip().lower() == 'yes':
             return 'GTG'
-        
+
         # For other statuses, Vendor List Updated must be 'No'
-        if pd.isna(row['Vendor List Updated']) or row['Vendor List Updated'] != 'No':
+        if pd.isna(vendor_list_updated) or str(vendor_list_updated).strip().lower() != 'no':
             return 'Data Incomplete'
-        
+
         # Get implementation type and days to go live
-        impl_type = row['Type of Implementation']
-        days = row['Days to Go Live']
+        impl_type = row.get('Type of Implementation', '')
+        days = row.get('Days to Go Live', 0)
 
         # Handle missing implementation type
         if pd.isna(impl_type) or impl_type == '':
             return 'Data Incomplete'
-        
+
+        # Handle NaN days
+        if pd.isna(days):
+            return 'Data Incomplete'
+
         # Handle rolled out (negative days)
         if days < 0:
             return 'GTG'  # Already rolled out
-        
+
         # Get thresholds for this implementation type
         thresholds = THRESHOLDS.get(impl_type)
         if not thresholds:
             # Default to Buy/Sell thresholds if type not found
             thresholds = THRESHOLDS['Buy/Sell']
-        
+
         # Escalated
         if days < thresholds['escalated']:
             return 'Escalated'
-        
+
         # Critical
         if thresholds['critical_min'] <= days <= thresholds['critical_max']:
             return 'Critical'
-        
+
         # On Track
         if days > thresholds['on_track']:
             return 'On Track'
-        
+
         # Default to Critical if between escalated and on_track
         return 'Critical'
     
     def _is_data_incomplete(self, row) -> bool:
         """
         Check if row has incomplete data
-        
+
         Args:
             row: DataFrame row
-            
+
         Returns:
             True if data is incomplete
         """
         for field in REQUIRED_FIELDS:
             if field in row.index:
-                if pd.isna(row[field]) or row[field] == '':
+                value = row.get(field, '')
+                if pd.isna(value) or str(value).strip() == '':
                     return True
         return False
     

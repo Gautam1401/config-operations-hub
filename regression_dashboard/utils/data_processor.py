@@ -24,28 +24,46 @@ class RegressionDataProcessor:
     
     def _prepare_data(self):
         """Prepare and clean data"""
-        
+
+        # Print available columns for debugging
+        print(f"[DEBUG Regression Processor] Available columns: {self.df.columns.tolist()}")
+
         # Rename columns to standard names
         column_mapping = {
             'Go-Live Date': 'Go Live Date',
             'Testing Status': 'Status'
         }
         self.df.rename(columns=column_mapping, inplace=True)
-        
+
+        # Add missing columns with defaults if they don't exist
+        required_cols = {
+            'Go Live Date': None,
+            'SIM Start Date': None,
+            'Status': '',
+            'Dealership Name': '',
+            'Assignee': '',
+            'Region': ''
+        }
+
+        for col, default_val in required_cols.items():
+            if col not in self.df.columns:
+                print(f"[WARNING] Column '{col}' not found, adding with default value")
+                self.df[col] = default_val
+
         # Ensure date columns are datetime
         self.df['Go Live Date'] = pd.to_datetime(self.df['Go Live Date'], errors='coerce')
         self.df['SIM Start Date'] = pd.to_datetime(self.df['SIM Start Date'], errors='coerce')
-        
+
         # Add Month and Year columns for filtering
         self.df['Go Live Month'] = self.df['Go Live Date'].dt.month
         self.df['Go Live Year'] = self.df['Go Live Date'].dt.year
-        
+
         # Clean Status column (handle None, NaN, empty strings)
         self.df['Status'] = self.df['Status'].fillna('').astype(str).str.strip()
         self.df.loc[self.df['Status'] == '', 'Status'] = None
-        
+
         print(f"[DEBUG Regression Processor] Data prepared: {len(self.df)} records")
-        print(f"[DEBUG Regression Processor] Columns: {self.df.columns.tolist()}")
+        print(f"[DEBUG Regression Processor] Final columns: {self.df.columns.tolist()}")
         print(f"[DEBUG Regression Processor] Status distribution:\n{self.df['Status'].value_counts(dropna=False)}")
     
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
