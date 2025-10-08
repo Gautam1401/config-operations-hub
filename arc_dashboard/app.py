@@ -35,6 +35,7 @@ from shared.styles import (
     apply_modern_styles,
     render_modern_header
 )
+from arc_dashboard.analytics.renderer import render_analytics_tab as render_arc_analytics
 
 
 # ============================================================================
@@ -579,7 +580,10 @@ def render_arc_dashboard():
         render_data_tab(processor)
 
     with tab2:
-        render_analytics_tab()
+        # Get filtered data based on current date filter
+        filtered_df = processor.filter_by_date(st.session_state.date_filter)
+        period_name = DATE_FILTERS[st.session_state.date_filter]
+        render_arc_analytics(filtered_df, period_name)
 
 
 def main():
@@ -601,12 +605,15 @@ def main():
     
     # Main content tabs
     tab1, tab2 = st.tabs(["📋 Data", "📊 Analytics"])
-    
+
     with tab1:
         render_data_tab(processor)
-    
+
     with tab2:
-        render_analytics_tab()
+        # Get filtered data based on current date filter
+        filtered_df = processor.filter_by_date(st.session_state.date_filter)
+        period_name = DATE_FILTERS[st.session_state.date_filter]
+        render_arc_analytics(filtered_df, period_name)
     
     # Footer
     st.divider()
