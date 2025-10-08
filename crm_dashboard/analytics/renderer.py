@@ -170,32 +170,75 @@ def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtere
             st.info("💡 Action: Investigate why these stores have data issues and resolve to enable testing")
 
 
-def render_analytics_tab(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame, date_filter: str):
-    """
-    Main function to render Analytics tab with sub-tabs
-    
-    Args:
-        calculator: CRMAnalyticsCalculator instance
-        filtered_df: Filtered DataFrame based on date selection
-        date_filter: Current date filter selection
-    """
-    st.markdown("## 📈 Analytics Dashboard")
-    
-    # Show current filter
-    st.info(f"📅 Showing analytics for: **{date_filter.replace('_', ' ').title()}**")
-    
+def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, full_df: pd.DataFrame):
+    """Render analytics for a specific month"""
+    # Filter data for this month
+    month_df = full_df[full_df['Month Name'] == month_name]
+
+    st.markdown(f"### 📅 {month_name}")
+    st.info(f"Total stores in {month_name}: **{len(month_df)}**")
+
     # Sub-tabs for different analytics
     tab1, tab2, tab3 = st.tabs([
         "📋 Configuration",
         "✅ Pre Go Live",
         "🧪 Go Live Testing"
     ])
-    
+
     with tab1:
-        render_configuration_analytics(calculator, filtered_df)
-    
+        render_configuration_analytics(calculator, month_df)
+
     with tab2:
-        render_pre_go_live_analytics(calculator, filtered_df)
-    
+        render_pre_go_live_analytics(calculator, month_df)
+
     with tab3:
-        render_go_live_testing_analytics(calculator, filtered_df)
+        render_go_live_testing_analytics(calculator, month_df)
+
+
+def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):
+    """Render YTD analytics"""
+    st.markdown(f"### 📅 Year to Date (YTD)")
+    st.info(f"Total stores YTD: **{len(full_df)}**")
+
+    # Sub-tabs for different analytics
+    tab1, tab2, tab3 = st.tabs([
+        "📋 Configuration",
+        "✅ Pre Go Live",
+        "🧪 Go Live Testing"
+    ])
+
+    with tab1:
+        render_configuration_analytics(calculator, full_df)
+
+    with tab2:
+        render_pre_go_live_analytics(calculator, full_df)
+
+    with tab3:
+        render_go_live_testing_analytics(calculator, full_df)
+
+
+def render_analytics_tab(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):
+    """
+    Main function to render Analytics tab with month-by-month breakdown
+
+    Args:
+        calculator: CRMAnalyticsCalculator instance
+        full_df: Full DataFrame (not filtered by date)
+    """
+    st.markdown("## 📈 Analytics Dashboard")
+
+    # Get unique months sorted
+    months = sorted(full_df['Month Name'].unique())
+
+    # Create tabs for each month + YTD
+    tab_labels = months + ['YTD (Year to Date)']
+    tabs = st.tabs(tab_labels)
+
+    # Render each month
+    for idx, month in enumerate(months):
+        with tabs[idx]:
+            render_month_analytics(calculator, month, full_df)
+
+    # Render YTD
+    with tabs[-1]:
+        render_ytd_analytics(calculator, full_df)

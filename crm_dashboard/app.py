@@ -27,8 +27,8 @@ from crm_dashboard.analytics.renderer import render_analytics_tab as render_anal
 
 
 # Dashboard Version
-__version__ = "1.2.0"
-__last_updated__ = "2025-10-08 19:30:00 IST"
+__version__ = "1.2.1"
+__last_updated__ = "2025-10-08 20:00:00 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""
@@ -475,17 +475,11 @@ def render_data_tab(processor: CRMDataProcessor):
 def render_analytics_tab(processor: CRMDataProcessor):
     """Render Analytics tab with full analytics"""
 
-    # Get current date filter from session state
-    date_filter = st.session_state.get('crm_date_filter', 'current_month')
-
-    # Get filtered data based on date filter
-    filtered_df = processor.filter_by_date_range(date_filter)
-
     # Create analytics calculator
     calculator = CRMAnalyticsCalculator(processor.df)
 
-    # Render analytics content
-    render_analytics_content(calculator, filtered_df, date_filter)
+    # Render analytics content with full dataframe (month tabs will handle filtering)
+    render_analytics_content(calculator, processor.df)
 
 
 def render_crm_dashboard():
