@@ -25,8 +25,8 @@ from shared.styles import (
 
 
 # Dashboard Version
-__version__ = "1.1.4"
-__last_updated__ = "2025-10-08 15:38:20 IST"
+__version__ = "1.1.5"
+__last_updated__ = "2025-10-08 15:47:43 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""
@@ -317,8 +317,8 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
                 (filtered_df['Pre Go Live Assignee'].notna()) &
                 (filtered_df['Pre Go Live Assignee'] != '')
             ]
-            region_counts = {region: len(checks_df[checks_df['Region'] == region]) 
-                           for region in processor.get_regions(filtered_df)}
+            region_counts = {region: len(checks_df[checks_df['Region'] == region])
+                           for region in processor.get_regions()}  # Use full dataset
         else:
             region_counts = processor.get_region_counts(
                 'Pre Go Live Status',
@@ -380,12 +380,12 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
         
         if st.session_state.crm_selected_kpi == 'Tests Completed':
             tests_df = filtered_df[
-                (filtered_df['Go Live Testing Assignee'].notna()) & 
+                (filtered_df['Go Live Testing Assignee'].notna()) &
                 (filtered_df['Go Live Testing Assignee'] != '') &
                 (filtered_df['Days to Go Live'] <= 0)
             ]
-            region_counts = {region: len(tests_df[tests_df['Region'] == region]) 
-                           for region in processor.get_regions(filtered_df)}
+            region_counts = {region: len(tests_df[tests_df['Region'] == region])
+                           for region in processor.get_regions()}  # Use full dataset
         else:
             region_counts = processor.get_region_counts(
                 'Go Live Testing Status',

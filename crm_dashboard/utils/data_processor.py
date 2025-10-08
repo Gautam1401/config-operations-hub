@@ -319,12 +319,12 @@ class CRMDataProcessor:
             print("[DEBUG CRM] 'Region' column missing in DataFrame!")
             return ['Unknown']
 
-        # Normalize regions: strip whitespace, title case
-        df['Region'] = df['Region'].astype(str).str.strip().str.title()
-        
+        # Normalize regions: strip whitespace, title case (create new series to avoid warning)
+        normalized_regions = df['Region'].astype(str).str.strip().str.title()
+
         # Get unique regions, excluding NaN and empty values
-        regions = [r for r in df['Region'].unique() if r and r != 'Nan']
-        
+        regions = [r for r in normalized_regions.unique() if r and r != 'Nan']
+
         # If no regions found, return default
         if not regions:
             print("[DEBUG CRM] No regions found, returning default")
@@ -333,7 +333,7 @@ class CRMDataProcessor:
         # Sort regions alphabetically, then add 'All' at the beginning
         sorted_regions = sorted(regions)
         region_options = ['All'] + sorted_regions
-        
+
         print(f"[DEBUG CRM] Regions extracted: {region_options}")
         return region_options
 
@@ -421,12 +421,23 @@ class CRMDataProcessor:
             filtered = df[df[status_field].str.contains(status_value, na=False)]
         else:
             filtered = df[df[status_field] == status_value]
-        
+
+        # IMPORTANT: Get regions from FULL dataset, not filtered data
+        # This ensures all regions are shown even if current filter excludes some
         region_counts = {}
-        for region in self.get_regions(df):
-            count = len(filtered[filtered['Region'] == region])
+        for region in self.get_regions():  # Use full dataset (self.df)
+            if region == 'All':
+                # "All" should show total count across all regions
+                count = len(filtered)
+            else:
+                # Normalize region name for comparison
+                normalized_region = region.upper().replace(' ', '').replace('_', '')
+                # Count records where region matches (case-insensitive)
+                count = len(filtered[
+                    filtered['Region'].astype(str).str.upper().str.replace(' ', '').str.replace('_', '') == normalized_region
+                ])
             region_counts[region] = count
-        
+
         print(f"[DEBUG CRMDataProcessor] Region counts for {status_field}={status_value}: {region_counts}")
         return region_counts
     
