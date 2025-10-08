@@ -63,17 +63,17 @@ __version__ = "1.2.0"
 __last_updated__ = "2025-10-08 22:30:00 IST"
 
 def initialize_session_state():
-    """Initialize session state variables - NEW FLOW: Module → KPI → Region → Table"""
+    """Initialize session state variables"""
     if 'selected_module' not in st.session_state:
-        st.session_state.selected_module = None  # NEW: Module selection (Parts/Service/Accounting)
+        st.session_state.selected_module = None
     if 'selected_kpi' not in st.session_state:
         st.session_state.selected_kpi = None
     if 'selected_region' not in st.session_state:
         st.session_state.selected_region = None
     if 'selected_lob' not in st.session_state:
-        st.session_state.selected_lob = None  # Keep for backward compatibility
+        st.session_state.selected_lob = None
     if 'date_filter' not in st.session_state:
-        st.session_state.date_filter = 'current_month'
+        st.session_state.date_filter = 'october'  # Default to October
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
 
@@ -381,28 +381,24 @@ def render_data_tab(processor: ARCDataProcessor):
     # Month Filter at the top
     st.markdown("### 📅 Select Month")
 
-    today = pd.Timestamp.today().normalize()
-    current_month_str = today.strftime("%B %Y")
-    next_month_dt = today + pd.DateOffset(months=1)
-    next_month_str = next_month_dt.strftime("%B %Y")
-    ytd_str = "YTD (Year to Date)"
+    month_options = ['September', 'October', 'November', 'YTD (All Months)']
+    month_keys = ['september', 'october', 'november', 'ytd']
+
+    # Get current index
+    current_idx = month_keys.index(st.session_state.date_filter) if st.session_state.date_filter in month_keys else 1
 
     month_option = st.radio(
         "Select Month",
-        [current_month_str, next_month_str, ytd_str],
-        index=0,
+        month_options,
+        index=current_idx,
         horizontal=True,
         key="arc_month_filter",
         label_visibility="collapsed"
     )
 
     # Map selection to filter type
-    if month_option == current_month_str:
-        st.session_state.date_filter = 'current_month'
-    elif month_option == next_month_str:
-        st.session_state.date_filter = 'next_month'
-    else:  # YTD
-        st.session_state.date_filter = 'ytd'
+    selected_idx = month_options.index(month_option)
+    st.session_state.date_filter = month_keys[selected_idx]
 
     st.markdown("---")
 
@@ -549,10 +545,10 @@ def render_arc_dashboard():
     # Initialize session state
     initialize_session_state()
 
-    # Version indicator with cache clear button
+    # Cache clear button only
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.info("🆕 **NEW FLOW:** Module → KPI → Region → Table (v2.0)")
+        st.empty()  # Remove the NEW FLOW banner
     with col2:
         if st.button("🔄 Clear Cache", key="arc_clear_cache"):
             st.cache_data.clear()

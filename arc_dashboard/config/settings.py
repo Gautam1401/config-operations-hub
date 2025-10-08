@@ -110,14 +110,12 @@ SHAREPOINT_CONFIG = {
 # DATE FILTER OPTIONS
 # ============================================================================
 
-# Calculate current and next month dynamically
-_current_month = datetime.now().strftime('%B %Y')
-_next_month = (datetime.now() + relativedelta(months=1)).strftime('%B %Y')
-
+# Month-specific filters (matching the Excel sheets)
 DATE_FILTERS = {
-    'current_month': _current_month,
-    'next_month': _next_month,
-    'ytd': 'YTD (Year to Date)',
+    'september': 'September',
+    'october': 'October',
+    'november': 'November',
+    'ytd': 'YTD (All Months)',
 }
 
 # ============================================================================

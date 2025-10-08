@@ -61,32 +61,34 @@ class ARCDataProcessor:
 
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by date range using exact calendar month logic
+        Filter data by month name
 
         Args:
-            filter_type: 'current_month', 'next_month', or 'ytd'
+            filter_type: 'september', 'october', 'november', or 'ytd'
 
         Returns:
             pd.DataFrame: Filtered data
         """
-        today = pd.Timestamp.today()
-
-        if filter_type == 'current_month':
-            # Current Month: Exact month and year match
-            mask = (self.df['Go Live Date'].dt.month == today.month) & \
-                   (self.df['Go Live Date'].dt.year == today.year)
+        if filter_type == 'september':
+            # September 2025
+            mask = (self.df['Go Live Date'].dt.month == 9) & \
+                   (self.df['Go Live Date'].dt.year == 2025)
             return self.df[mask].copy()
 
-        elif filter_type == 'next_month':
-            # Next Month: Calculate next month and year
-            next_month = (today.month % 12) + 1
-            next_month_year = today.year if today.month < 12 else today.year + 1
-            mask = (self.df['Go Live Date'].dt.month == next_month) & \
-                   (self.df['Go Live Date'].dt.year == next_month_year)
+        elif filter_type == 'october':
+            # October 2025
+            mask = (self.df['Go Live Date'].dt.month == 10) & \
+                   (self.df['Go Live Date'].dt.year == 2025)
+            return self.df[mask].copy()
+
+        elif filter_type == 'november':
+            # November 2025
+            mask = (self.df['Go Live Date'].dt.month == 11) & \
+                   (self.df['Go Live Date'].dt.year == 2025)
             return self.df[mask].copy()
 
         elif filter_type == 'ytd':
-            # YTD: All data (entire dataset - past, present, and future)
+            # YTD: All data (entire dataset)
             return self.df.copy()
 
         else:
