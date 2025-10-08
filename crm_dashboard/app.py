@@ -25,8 +25,8 @@ from shared.styles import (
 
 
 # Dashboard Version
-__version__ = "1.1.6"
-__last_updated__ = "2025-10-08 16:00:30 IST"
+__version__ = "1.1.7"
+__last_updated__ = "2025-10-08 17:38:38 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""
@@ -75,8 +75,23 @@ def render_date_filter():
     
     st.write("#### 📅 Select Time Period")
     
-    filter_options = list(DATE_FILTERS.values())
-    filter_keys = list(DATE_FILTERS.keys())
+    # Get current and next month names dynamically
+    from datetime import datetime
+    current_month_name = datetime.now().strftime('%B')  # e.g., 'October'
+    next_month = datetime.now().month + 1 if datetime.now().month < 12 else 1
+    next_month_year = datetime.now().year if datetime.now().month < 12 else datetime.now().year + 1
+    next_month_name = datetime(next_month_year, next_month, 1).strftime('%B')  # e.g., 'November'
+    
+    # Dynamic filter options with actual month names
+    filter_options_dynamic = {
+        'current_month': current_month_name,
+        'next_month': next_month_name,
+        'ytd': 'YTD (Year to Date)'
+    }
+    
+    
+    filter_options = list(filter_options_dynamic.values())
+    filter_keys = list(filter_options_dynamic.keys())
     
     current_idx = filter_keys.index(st.session_state.crm_date_filter) if st.session_state.crm_date_filter in filter_keys else 0
     
