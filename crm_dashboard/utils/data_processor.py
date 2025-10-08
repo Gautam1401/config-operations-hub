@@ -99,8 +99,11 @@ class CRMDataProcessor:
                 # Handle "Implementation" as Copy
                 elif 'implementation' in config_type_lower:
                     config_type = 'Copy'
+                # Handle explicit "Not Configured"
+                elif 'not configured' in config_type_lower:
+                    config_type = 'Not Configured'
                 else:
-                    config_type = None  # Unknown value
+                    config_type = None  # Unknown/blank value
             else:
                 config_type = None
 
@@ -119,11 +122,11 @@ class CRMDataProcessor:
             if is_rolled_out and config_type is None:
                 return 'Data Incorrect'
 
-            # Not Configured: Future go-live with blank Configuration Type
+            # Blank/None for future go-lives: Return None (will be excluded from counts)
             if config_type is None:
-                return 'Not Configured'
+                return None
 
-            # Return normalized status
+            # Return normalized status (Standard, Copy, or Not Configured)
             return config_type
 
         self.df['Configuration Status'] = self.df.apply(get_config_status, axis=1)
@@ -336,19 +339,23 @@ class CRMDataProcessor:
 
     
     def get_configuration_kpis(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
-        """Get Configuration KPI counts"""
+        """Get Configuration KPI counts - excludes records with None/blank Configuration Status"""
         if df is None:
             df = self.df
-        
+
+        # Filter out records with None/blank Configuration Status (future go-lives with no data)
+        df_with_status = df[df['Configuration Status'].notna()]
+
         kpis = {
-            'Go Lives': len(df),  # Total go-lives
-            'Standard': len(df[df['Configuration Status'] == 'Standard']),
-            'Copy': len(df[df['Configuration Status'] == 'Copy']),
-            'Not Configured': len(df[df['Configuration Status'] == 'Not Configured']),
-            'Data Incorrect': len(df[df['Configuration Status'] == 'Data Incorrect']),
+            'Go Lives': len(df_with_status),  # Total go-lives with configuration status
+            'Standard': len(df_with_status[df_with_status['Configuration Status'] == 'Standard']),
+            'Copy': len(df_with_status[df_with_status['Configuration Status'] == 'Copy']),
+            'Not Configured': len(df_with_status[df_with_status['Configuration Status'] == 'Not Configured']),
+            'Data Incorrect': len(df_with_status[df_with_status['Configuration Status'] == 'Data Incorrect']),
         }
-        
+
         print(f"[DEBUG CRMDataProcessor] Configuration KPIs: {kpis}")
+        print(f"[DEBUG CRMDataProcessor] Excluded {len(df) - len(df_with_status)} records with blank status")
         return kpis
     
     def get_pre_go_live_kpis(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:
