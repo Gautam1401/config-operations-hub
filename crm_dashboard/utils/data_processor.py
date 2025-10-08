@@ -82,105 +82,154 @@ class CRMDataProcessor:
     
     def _calculate_configuration_status(self):
         """Calculate Configuration status based on Configuration Type"""
-        
+
         def get_config_status(row):
-            # Data Incorrect: Go Live Status is 'Rolled out' but Configuration Type is blank/None
-            if pd.notna(row['Go Live Status']) and row['Go Live Status'] == 'Rolled out':
-                if pd.isna(row['Configuration Type']) or row['Configuration Type'] == '':
-                    return 'Data Incorrect'
-            
-            # Not Configured
-            if pd.isna(row['Configuration Type']) or row['Configuration Type'] == '':
+            config_type = row['Configuration Type']
+
+            # Normalize the configuration type value
+            if pd.notna(config_type) and isinstance(config_type, str):
+                config_type_lower = config_type.lower().strip()
+
+                # Handle variations of "Standard"
+                if 'standard' in config_type_lower or 'stnadard' in config_type_lower:
+                    config_type = 'Standard'
+                # Handle variations of "Copy"
+                elif 'copy' in config_type_lower:
+                    config_type = 'Copy'
+                # Handle "Implementation" as Copy
+                elif 'implementation' in config_type_lower:
+                    config_type = 'Copy'
+                else:
+                    config_type = None  # Unknown value
+            else:
+                config_type = None
+
+            # Check if this is a past go-live (Rolled Out)
+            # Only consider dates BEFORE today (not including today) as rolled out
+            is_rolled_out = False
+            if pd.notna(row['Go Live Date']):
+                try:
+                    go_live_date = pd.to_datetime(row['Go Live Date']).normalize()
+                    today = pd.Timestamp.now().normalize()
+                    is_rolled_out = go_live_date < today  # Strictly less than (not <=)
+                except:
+                    pass
+
+            # Data Incorrect: Past go-live but Configuration Type is blank/None
+            if is_rolled_out and config_type is None:
+                return 'Data Incorrect'
+
+            # Not Configured: Future go-live with blank Configuration Type
+            if config_type is None:
                 return 'Not Configured'
-            
-            # Standard or Copy
-            if row['Configuration Type'] in ['Standard', 'Copy']:
-                return row['Configuration Type']
-            
-            # Implementation -> treat as Copy
-            if row['Configuration Type'] == 'Implementation':
-                return 'Copy'
-            
-            return 'Not Configured'
-        
+
+            # Return normalized status
+            return config_type
+
         self.df['Configuration Status'] = self.df.apply(get_config_status, axis=1)
         print(f"[DEBUG CRMDataProcessor] Configuration Status calculated")
+        print(f"[DEBUG CRMDataProcessor] Configuration Status counts:\n{self.df['Configuration Status'].value_counts(dropna=False)}")
     
     def _calculate_pre_go_live_status(self):
         """Calculate Pre Go Live status based on Domain Updated and Set Up Check"""
-        
+
         def get_pre_go_live_status(row):
-            # Data Incorrect: Go Live Status is 'Rolled out' but both checks are blank/None
-            if pd.notna(row['Go Live Status']) and row['Go Live Status'] == 'Rolled out':
-                if (pd.isna(row['Pre Go Live Domain Updated']) or row['Pre Go Live Domain Updated'] == '') and \
-                   (pd.isna(row['Pre Go Live Set Up Check']) or row['Pre Go Live Set Up Check'] == ''):
-                    return 'Data Incorrect'
-            
+            # Check if this is a past go-live (Rolled Out)
+            # Only consider dates BEFORE today (not including today) as rolled out
+            is_rolled_out = False
+            if pd.notna(row['Go Live Date']):
+                try:
+                    go_live_date = pd.to_datetime(row['Go Live Date']).normalize()
+                    today = pd.Timestamp.now().normalize()
+                    is_rolled_out = go_live_date < today  # Strictly less than (not <=)
+                except:
+                    pass
+
             domain = row['Pre Go Live Domain Updated']
             setup = row['Pre Go Live Set Up Check']
-            
-            # Both blank/NA -> Not started
-            if (pd.isna(domain) or domain == '') and (pd.isna(setup) or setup == ''):
+
+            # Both blank/NA
+            both_blank = (pd.isna(domain) or domain == '') and (pd.isna(setup) or setup == '')
+
+            # Data Incorrect: Past go-live but both checks are blank/None
+            if is_rolled_out and both_blank:
+                return 'Data Incorrect'
+
+            # Not started (future go-live with blank data)
+            if both_blank:
                 return None
-            
+
             # Both Yes -> GTG
             if domain == 'Yes' and setup == 'Yes':
                 return 'GTG'
-            
+
             # Both No -> Fail
             if domain == 'No' and setup == 'No':
                 return 'Fail'
-            
+
             # One Yes, one No -> Partial
             if (domain == 'Yes' and setup == 'No') or (domain == 'No' and setup == 'Yes'):
                 return 'Partial'
-            
+
             # One Yes, one blank -> Partial
             if (domain == 'Yes' and (pd.isna(setup) or setup == '')) or \
                ((pd.isna(domain) or domain == '') and setup == 'Yes'):
                 return 'Partial'
-            
+
             # One No, one blank -> Partial
             if (domain == 'No' and (pd.isna(setup) or setup == '')) or \
                ((pd.isna(domain) or domain == '') and setup == 'No'):
                 return 'Partial'
-            
+
             return None
-        
+
         self.df['Pre Go Live Status'] = self.df.apply(get_pre_go_live_status, axis=1)
         print(f"[DEBUG CRMDataProcessor] Pre Go Live Status calculated")
+        print(f"[DEBUG CRMDataProcessor] Pre Go Live Status counts:\n{self.df['Pre Go Live Status'].value_counts(dropna=False)}")
     
     def _calculate_go_live_testing_status(self):
         """Calculate Go Live Testing status based on test results with weighted scoring"""
-        
+
         def get_go_live_testing_status(row):
             # Skip if go-live date is in the future
             if row['Days to Go Live'] > 0:
                 return None
-            
-            # Data Incorrect: Go Live Status is 'Rolled out' but all tests are blank/None
-            if pd.notna(row['Go Live Status']) and row['Go Live Status'] == 'Rolled out':
-                if all(pd.isna(row[field]) or row[field] == '' 
-                       for field in ['Sample ADF', 'Inbound Email', 'Outbound Email', 'Data Migration']):
-                    return 'Data Incorrect'
-            
+
+            # Check if this is a past go-live (Rolled Out)
+            # Only consider dates BEFORE today (not including today) as rolled out
+            is_rolled_out = False
+            if pd.notna(row['Go Live Date']):
+                try:
+                    go_live_date = pd.to_datetime(row['Go Live Date']).normalize()
+                    today = pd.Timestamp.now().normalize()
+                    is_rolled_out = go_live_date < today  # Strictly less than (not <=)
+                except:
+                    pass
+
             sample_adf = row['Sample ADF']
             inbound = row['Inbound Email']
             outbound = row['Outbound Email']
             data_mig = row['Data Migration']
-            
-            # All blank/NA -> Not tested
-            if all(pd.isna(val) or val == '' for val in [sample_adf, inbound, outbound, data_mig]):
+
+            # All blank/NA
+            all_blank = all(pd.isna(val) or val == '' for val in [sample_adf, inbound, outbound, data_mig])
+
+            # Data Incorrect: Past go-live but all tests are blank/None
+            if is_rolled_out and all_blank:
+                return 'Data Incorrect'
+
+            # Not tested (future go-live with blank data)
+            if all_blank:
                 return None
-            
+
             # All Yes or No Issues -> GTG
             if all(val in ['Yes', 'No Issues'] for val in [sample_adf, inbound, outbound, data_mig] if pd.notna(val) and val != ''):
                 return 'GTG'
-            
+
             # Check for blockers (Sample ADF or Data Migration have issues)
             has_blocker = False
             has_non_blocker = False
-            
+
             if sample_adf == 'Issues Found':
                 has_blocker = True
             if data_mig == 'Issues Found':
@@ -189,7 +238,7 @@ class CRMDataProcessor:
                 has_non_blocker = True
             if outbound == 'Issues Found':
                 has_non_blocker = True
-            
+
             # Determine status
             if has_blocker and has_non_blocker:
                 return 'Go Live Blocker & Non-Blocker'
@@ -197,15 +246,16 @@ class CRMDataProcessor:
                 return 'Go Live Blocker'
             elif has_non_blocker:
                 return 'Non-Blocker'
-            
+
             # All failed
             if all(val == 'Issues Found' for val in [sample_adf, inbound, outbound, data_mig] if pd.notna(val) and val != ''):
                 return 'Fail'
-            
+
             return None
-        
+
         self.df['Go Live Testing Status'] = self.df.apply(get_go_live_testing_status, axis=1)
         print(f"[DEBUG CRMDataProcessor] Go Live Testing Status calculated")
+        print(f"[DEBUG CRMDataProcessor] Go Live Testing Status counts:\n{self.df['Go Live Testing Status'].value_counts(dropna=False)}")
     
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """

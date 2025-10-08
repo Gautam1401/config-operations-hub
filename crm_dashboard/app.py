@@ -25,8 +25,8 @@ from shared.styles import (
 
 
 # Dashboard Version
-__version__ = "1.1.2"
-__last_updated__ = "2025-10-07 22:27:23 IST"
+__version__ = "1.1.3"
+__last_updated__ = "2025-10-08 15:22:44 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""
