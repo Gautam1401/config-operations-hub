@@ -4,8 +4,8 @@ Integrates all LOB dashboards: ARC Configuration, CRM Configuration, Integration
 """
 
 # Version and Last Updated (IST)
-__version__ = "1.1.5"
-__last_updated__ = "2025-10-08 15:47:43 IST"
+__version__ = "1.1.6"
+__last_updated__ = "2025-10-08 16:00:30 IST"
 
 import streamlit as st
 

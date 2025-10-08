@@ -27,8 +27,8 @@ from shared.styles import (
 
 
 # Dashboard Version
-__version__ = "1.1.5"
-__last_updated__ = "2025-10-08 15:47:43 IST"
+__version__ = "1.1.6"
+__last_updated__ = "2025-10-08 16:00:30 IST"
 
 def initialize_session_state():
     """Initialize session state variables for Integration dashboard"""
@@ -254,7 +254,7 @@ def render_data_tab(processor: IntegrationDataProcessor):
         # Get region counts
         if st.session_state.integration_selected_kpi == 'Total Go Lives':
             region_counts = {region: len(filtered_df[filtered_df['Region'] == region]) 
-                           for region in processor.get_regions(filtered_df)}
+                           for region in processor.get_regions()}  # Use full dataset
         elif st.session_state.integration_selected_kpi == 'Upcoming Week':
             # Get upcoming week data and count by region
             upcoming_df = processor.get_upcoming_week_data()

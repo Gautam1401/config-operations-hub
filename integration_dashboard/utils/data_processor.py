@@ -288,11 +288,11 @@ class IntegrationDataProcessor:
             print("[DEBUG Integration] 'Region' column missing in DataFrame!")
             return ['All']
 
-        # Normalize regions: strip whitespace, title case
-        df['Region'] = df['Region'].astype(str).str.strip().str.title()
+        # Normalize regions: strip whitespace, title case (create new series to avoid warning)
+        normalized_regions = df['Region'].astype(str).str.strip().str.title()
         
         # Get unique regions, excluding NaN and empty values
-        regions = [r for r in df['Region'].unique() if r and r != 'Nan']
+        regions = [r for r in normalized_regions.unique() if r and r != 'Nan']
         
         # If no regions found, return default
         if not regions:
@@ -323,8 +323,17 @@ class IntegrationDataProcessor:
             status_df = df[df['Status'] == status]
         
         region_counts = {}
-        for region in self.get_regions(df):
-            count = len(status_df[status_df['Region'] == region])
+        for region in self.get_regions():  # Use full dataset
+            if region == 'All':
+                # "All" should show total count across all regions
+                count = len(status_df)
+            else:
+                # Normalize region name for comparison (case-insensitive)
+                normalized_region = region.upper().replace(' ', '').replace('_', '')
+                # Count records where region matches (case-insensitive)
+                count = len(status_df[
+                    status_df['Region'].astype(str).str.upper().str.replace(' ', '').str.replace('_', '') == normalized_region
+                ])
             region_counts[region] = count
         
         print(f"[DEBUG Integration Processor] Region counts for {status}: {region_counts}")
