@@ -255,17 +255,148 @@ def render_score_distribution(score_dist: Dict):
 def render_at_risk_stores(at_risk_stores: List[Dict]):
     """Render at-risk stores table"""
     st.markdown("#### ⚠️ At-Risk Stores (<7 Days to Go Live, Not GTG)")
-    
+
     if not at_risk_stores:
         st.success("✅ No at-risk stores!")
         return
-    
+
     df = pd.DataFrame(at_risk_stores)
-    
+
     st.dataframe(
         df,
         use_container_width=True,
         hide_index=True
     )
-    
+
     st.warning(f"🚨 {len(at_risk_stores)} stores require immediate attention!")
+
+
+def render_assignee_performance(assignee_data: Dict, category: str):
+    """Render assignee performance analysis"""
+    st.markdown(f"#### 👤 Assignee Performance - {category}")
+
+    if not assignee_data:
+        st.info("No assignee data available")
+        return
+
+    # Create DataFrame for display
+    rows = []
+    for assignee, metrics in assignee_data.items():
+        row = {'Assignee': assignee}
+        row.update(metrics)
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+
+    if category == "Configuration":
+        # Sort by completion rate
+        df = df.sort_values('completion_rate', ascending=False)
+
+        # Bar chart
+        fig = go.Figure()
+
+        fig.add_trace(go.Bar(
+            x=df['Assignee'],
+            y=df['completion_rate'],
+            text=df['completion_rate'].apply(lambda x: f"{x:.1f}%"),
+            textposition='auto',
+            marker_color=['#29C46F' if x >= 80 else '#FFC107' if x >= 60 else '#F44336' for x in df['completion_rate']],
+            name='Completion Rate'
+        ))
+
+        fig.update_layout(
+            title="Configuration Completion Rate by Assignee",
+            xaxis_title="Assignee",
+            yaxis_title="Completion Rate (%)",
+            height=400,
+            yaxis_range=[0, 100]
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Table
+        st.dataframe(
+            df[['Assignee', 'total', 'in_scope', 'out_of_scope', 'completion_rate']].rename(columns={
+                'total': 'Total',
+                'in_scope': 'In Scope',
+                'out_of_scope': 'Out of Scope',
+                'completion_rate': 'Completion Rate (%)'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    elif category == "Pre Go Live":
+        # Sort by GTG rate
+        df = df.sort_values('gtg_rate', ascending=False)
+
+        # Bar chart
+        fig = go.Figure()
+
+        fig.add_trace(go.Bar(
+            x=df['Assignee'],
+            y=df['gtg_rate'],
+            text=df['gtg_rate'].apply(lambda x: f"{x:.1f}%"),
+            textposition='auto',
+            marker_color=['#29C46F' if x >= 80 else '#FFC107' if x >= 60 else '#F44336' for x in df['gtg_rate']],
+            name='GTG Rate'
+        ))
+
+        fig.update_layout(
+            title="Pre Go Live GTG Rate by Assignee",
+            xaxis_title="Assignee",
+            yaxis_title="GTG Rate (%)",
+            height=400,
+            yaxis_range=[0, 100]
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Table
+        st.dataframe(
+            df[['Assignee', 'total', 'gtg', 'gtg_rate']].rename(columns={
+                'total': 'Total',
+                'gtg': 'GTG',
+                'gtg_rate': 'GTG Rate (%)'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    elif category == "Go Live Testing":
+        # Sort by GTG rate
+        df = df.sort_values('gtg_rate', ascending=False)
+
+        # Bar chart
+        fig = go.Figure()
+
+        fig.add_trace(go.Bar(
+            x=df['Assignee'],
+            y=df['gtg_rate'],
+            text=df['gtg_rate'].apply(lambda x: f"{x:.1f}%"),
+            textposition='auto',
+            marker_color=['#29C46F' if x >= 80 else '#FFC107' if x >= 60 else '#F44336' for x in df['gtg_rate']],
+            name='GTG Rate'
+        ))
+
+        fig.update_layout(
+            title="Go Live Testing GTG Rate by Assignee",
+            xaxis_title="Assignee",
+            yaxis_title="GTG Rate (%)",
+            height=400,
+            yaxis_range=[0, 100]
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Table
+        st.dataframe(
+            df[['Assignee', 'total', 'gtg', 'blockers', 'gtg_rate']].rename(columns={
+                'total': 'Total',
+                'gtg': 'GTG',
+                'blockers': 'Blockers',
+                'gtg_rate': 'GTG Rate (%)'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )

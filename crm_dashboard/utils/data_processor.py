@@ -230,16 +230,24 @@ class CRMDataProcessor:
                 return 'GTG'
 
             # Check for blockers (Sample ADF or Data Migration have issues)
+            # Issues = "Issues Found", "No", or anything that's not "Yes"/"No Issues"
             has_blocker = False
             has_non_blocker = False
 
-            if sample_adf == 'Issues Found':
+            # Sample ADF is a blocker (40% weight)
+            if pd.notna(sample_adf) and sample_adf not in ['Yes', 'No Issues', 'Unable to Test', 'Umable to Test', '']:
                 has_blocker = True
-            if data_mig == 'Issues Found':
+
+            # Data Migration is a blocker (35% weight)
+            if pd.notna(data_mig) and data_mig not in ['Yes', 'No Issues', 'Unable to Test', 'Umable to Test', '']:
                 has_blocker = True
-            if inbound == 'Issues Found':
+
+            # Inbound Email is a non-blocker (12.5% weight)
+            if pd.notna(inbound) and inbound not in ['Yes', 'No Issues', 'Unable to Test', 'Umable to Test', '']:
                 has_non_blocker = True
-            if outbound == 'Issues Found':
+
+            # Outbound Email is a non-blocker (12.5% weight)
+            if pd.notna(outbound) and outbound not in ['Yes', 'No Issues', 'Unable to Test', 'Umable to Test', '']:
                 has_non_blocker = True
 
             # Determine status
@@ -250,10 +258,7 @@ class CRMDataProcessor:
             elif has_non_blocker:
                 return 'Non-Blocker'
 
-            # All failed
-            if all(val == 'Issues Found' for val in [sample_adf, inbound, outbound, data_mig] if pd.notna(val) and val != ''):
-                return 'Fail'
-
+            # If we have test data but no failures, return None (shouldn't happen)
             return None
 
         self.df['Go Live Testing Status'] = self.df.apply(get_go_live_testing_status, axis=1)

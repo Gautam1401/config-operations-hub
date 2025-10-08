@@ -138,7 +138,7 @@ class CRMAnalyticsCalculator:
     def get_go_live_testing_analytics(self, filtered_df: pd.DataFrame) -> Dict:
         """
         Calculate Go Live Testing analytics
-        
+
         Returns:
             Dictionary with all go live testing metrics
         """
@@ -147,29 +147,33 @@ class CRMAnalyticsCalculator:
             (filtered_df['Go Live Testing Status'].notna()) &
             (filtered_df['Go Live Testing Status'] != 'Data Incorrect')
         ]
-        
+
         total = len(valid_df)
-        
+
         # Status breakdown
         status_counts = valid_df['Go Live Testing Status'].value_counts()
         gtg = status_counts.get('GTG', 0)
-        
-        # Count blockers and non-blockers
-        blockers = len(valid_df[valid_df['Go Live Testing Status'].str.contains('Blocker', na=False)])
-        non_blockers = len(valid_df[valid_df['Go Live Testing Status'].str.contains('Non-Blocker', na=False)])
-        
+
+        # Count blockers and non-blockers (including combined)
+        go_live_blocker = status_counts.get('Go Live Blocker', 0)
+        non_blocker = status_counts.get('Non-Blocker', 0)
+        both = status_counts.get('Go Live Blocker & Non-Blocker', 0)
+
+        total_blockers = go_live_blocker + both
+        total_non_blockers = non_blocker + both
+
         # GTG rate
         gtg_rate = (gtg / total * 100) if total > 0 else 0
-        
+
         # Test-specific pass rates
         test_pass_rates = self._get_test_pass_rates(valid_df)
-        
+
         # Weighted score analysis
         score_distribution = self._get_score_distribution(valid_df)
-        
+
         # Regional data
         regional_data = self._get_regional_breakdown(valid_df, 'Go Live Testing Status')
-        
+
         # Unable to test (Data Incorrect)
         unable_to_test = len(filtered_df[filtered_df['Go Live Testing Status'] == 'Data Incorrect'])
         unable_by_region = {}
@@ -179,18 +183,94 @@ class CRMAnalyticsCalculator:
                 unable = len(region_df[region_df['Go Live Testing Status'] == 'Data Incorrect'])
                 if unable > 0:
                     unable_by_region[region] = unable
-        
+
         return {
             'total': total,
             'gtg': gtg,
-            'blockers': blockers,
-            'non_blockers': non_blockers,
+            'blockers': total_blockers,
+            'non_blockers': total_non_blockers,
+            'go_live_blocker_only': go_live_blocker,
+            'non_blocker_only': non_blocker,
+            'both_blocker_and_non_blocker': both,
             'gtg_rate': gtg_rate,
             'test_pass_rates': test_pass_rates,
             'score_distribution': score_distribution,
             'regional_data': regional_data,
             'unable_to_test': unable_to_test,
             'unable_by_region': unable_by_region
+        }
+
+    def get_assignee_analytics(self, filtered_df: pd.DataFrame) -> Dict:
+        """
+        Calculate Assignee-level analytics
+
+        Returns:
+            Dictionary with assignee performance metrics
+        """
+        assignee_data = {}
+
+        # Configuration Assignee Analysis
+        config_assignees = {}
+        for assignee in filtered_df['Configuration Assignee'].unique():
+            if pd.notna(assignee) and assignee not in ['Not Under Ready For Configuration', 'Not configured', 'Yet to start', 'Not Configured', 'Handled by EM']:
+                assignee_df = filtered_df[filtered_df['Configuration Assignee'] == assignee]
+
+                total = len(assignee_df)
+                in_scope = len(assignee_df[assignee_df['Configuration Status'].isin(['Standard', 'Copy'])])
+                out_of_scope = len(assignee_df[assignee_df['Configuration Status'] == 'Not Configured'])
+                completion_rate = (in_scope / total * 100) if total > 0 else 0
+
+                config_assignees[assignee] = {
+                    'total': total,
+                    'in_scope': in_scope,
+                    'out_of_scope': out_of_scope,
+                    'completion_rate': completion_rate
+                }
+
+        # Pre Go Live Assignee Analysis
+        pregl_assignees = {}
+        for assignee in filtered_df['Pre Go Live Assignee'].unique():
+            if pd.notna(assignee):
+                assignee_df = filtered_df[filtered_df['Pre Go Live Assignee'] == assignee]
+
+                total = len(assignee_df)
+                gtg = len(assignee_df[assignee_df['Pre Go Live Status'] == 'GTG'])
+                gtg_rate = (gtg / total * 100) if total > 0 else 0
+
+                pregl_assignees[assignee] = {
+                    'total': total,
+                    'gtg': gtg,
+                    'gtg_rate': gtg_rate
+                }
+
+        # Go Live Testing Assignee Analysis
+        glt_assignees = {}
+        for assignee in filtered_df['Go Live Testing Assignee'].unique():
+            if pd.notna(assignee) and assignee not in ['Unable to Test', 'Umable to Test']:
+                assignee_df = filtered_df[filtered_df['Go Live Testing Assignee'] == assignee]
+
+                # Filter valid testing data
+                valid_df = assignee_df[
+                    (assignee_df['Go Live Testing Status'].notna()) &
+                    (assignee_df['Go Live Testing Status'] != 'Data Incorrect')
+                ]
+
+                total = len(valid_df)
+                gtg = len(valid_df[valid_df['Go Live Testing Status'] == 'GTG'])
+                blockers = len(valid_df[valid_df['Go Live Testing Status'].str.contains('Blocker', na=False)])
+                gtg_rate = (gtg / total * 100) if total > 0 else 0
+
+                glt_assignees[assignee] = {
+                    'total': total,
+                    'gtg': gtg,
+                    'blockers': blockers,
+                    'gtg_rate': gtg_rate
+                }
+
+        return {
+            'configuration': config_assignees,
+            'pre_go_live': pregl_assignees,
+            'go_live_testing': glt_assignees
         }
     
     def _get_regional_breakdown(self, df: pd.DataFrame, status_field: str) -> Dict:

@@ -16,7 +16,8 @@ from crm_dashboard.analytics.visualizations import (
     render_out_of_scope_analysis,
     render_test_pass_rates,
     render_score_distribution,
-    render_at_risk_stores
+    render_at_risk_stores,
+    render_assignee_performance
 )
 
 
@@ -170,6 +171,30 @@ def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtere
             st.info("💡 Action: Investigate why these stores have data issues and resolve to enable testing")
 
 
+def render_assignee_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame):
+    """Render Assignee Analytics"""
+    st.markdown("### 👤 Assignee Analytics")
+
+    # Calculate metrics
+    metrics = calculator.get_assignee_analytics(filtered_df)
+
+    # Sub-tabs for different assignee categories
+    tab1, tab2, tab3 = st.tabs([
+        "📋 Configuration",
+        "✅ Pre Go Live",
+        "🧪 Go Live Testing"
+    ])
+
+    with tab1:
+        render_assignee_performance(metrics['configuration'], "Configuration")
+
+    with tab2:
+        render_assignee_performance(metrics['pre_go_live'], "Pre Go Live")
+
+    with tab3:
+        render_assignee_performance(metrics['go_live_testing'], "Go Live Testing")
+
+
 def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, full_df: pd.DataFrame):
     """Render analytics for a specific month"""
     # Filter data for this month
@@ -179,10 +204,11 @@ def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, 
     st.info(f"Total stores in {month_name}: **{len(month_df)}**")
 
     # Sub-tabs for different analytics
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "📋 Configuration",
         "✅ Pre Go Live",
-        "🧪 Go Live Testing"
+        "🧪 Go Live Testing",
+        "👤 Assignee"
     ])
 
     with tab1:
@@ -194,6 +220,9 @@ def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, 
     with tab3:
         render_go_live_testing_analytics(calculator, month_df)
 
+    with tab4:
+        render_assignee_analytics(calculator, month_df)
+
 
 def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):
     """Render YTD analytics"""
@@ -201,10 +230,11 @@ def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFra
     st.info(f"Total stores YTD: **{len(full_df)}**")
 
     # Sub-tabs for different analytics
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "📋 Configuration",
         "✅ Pre Go Live",
-        "🧪 Go Live Testing"
+        "🧪 Go Live Testing",
+        "👤 Assignee"
     ])
 
     with tab1:
@@ -215,6 +245,9 @@ def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFra
 
     with tab3:
         render_go_live_testing_analytics(calculator, full_df)
+
+    with tab4:
+        render_assignee_analytics(calculator, full_df)
 
 
 def render_analytics_tab(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):
