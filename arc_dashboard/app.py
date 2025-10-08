@@ -581,7 +581,7 @@ def render_arc_dashboard():
 
     with tab2:
         # Get filtered data based on current date filter
-        filtered_df = processor.filter_by_date(st.session_state.date_filter)
+        filtered_df = processor.filter_by_date_range(st.session_state.date_filter)
         period_name = DATE_FILTERS[st.session_state.date_filter]
         render_arc_analytics(filtered_df, period_name)
 
@@ -611,7 +611,7 @@ def main():
 
     with tab2:
         # Get filtered data based on current date filter
-        filtered_df = processor.filter_by_date(st.session_state.date_filter)
+        filtered_df = processor.filter_by_date_range(st.session_state.date_filter)
         period_name = DATE_FILTERS[st.session_state.date_filter]
         render_arc_analytics(filtered_df, period_name)
     
