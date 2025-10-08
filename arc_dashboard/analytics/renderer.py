@@ -8,45 +8,93 @@ import pandas as pd
 from .calculator import ARCAnalyticsCalculator
 
 
-def render_analytics_tab(filtered_df: pd.DataFrame, period_name: str):
-    """
-    Render Analytics tab for ARC Configuration
-    
-    Args:
-        filtered_df: Filtered DataFrame based on selected period
-        period_name: Name of the selected period (e.g., "October 2025")
-    """
-    
-    if filtered_df.empty:
-        st.warning("No data available for analytics")
-        return
-    
-    # Initialize calculator
-    calculator = ARCAnalyticsCalculator(filtered_df)
-    
+def render_month_analytics(calculator: ARCAnalyticsCalculator, month_name: str, month_df: pd.DataFrame):
+    """Render analytics for a specific month"""
+
+    st.markdown(f"### 📅 {month_name}")
+    st.info(f"Total dealerships in {month_name}: **{len(month_df)}**")
+
     # Sub-tabs for different analytics views
     analytics_tabs = st.tabs([
         "📊 Configuration Status",
-        "⏱️ Timeline Analysis", 
         "👥 Assignee Performance",
         "🌍 Regional Insights"
     ])
-    
+
     # Tab 1: Configuration Status
     with analytics_tabs[0]:
-        render_configuration_analytics(calculator, filtered_df, period_name)
-    
-    # Tab 2: Timeline Analysis
+        render_configuration_analytics(calculator, month_df, month_name)
+
+    # Tab 2: Assignee Performance
     with analytics_tabs[1]:
-        render_timeline_analytics(calculator, filtered_df, period_name)
-    
-    # Tab 3: Assignee Performance
+        render_assignee_analytics(calculator, month_df, month_name)
+
+    # Tab 3: Regional Insights
     with analytics_tabs[2]:
-        render_assignee_analytics(calculator, filtered_df, period_name)
-    
-    # Tab 4: Regional Insights
-    with analytics_tabs[3]:
-        render_regional_analytics(calculator, filtered_df, period_name)
+        render_regional_analytics(calculator, month_df, month_name)
+
+
+def render_ytd_analytics(calculator: ARCAnalyticsCalculator, full_df: pd.DataFrame):
+    """Render YTD analytics"""
+
+    st.markdown(f"### 📅 Year to Date (YTD)")
+    st.info(f"Total dealerships YTD: **{len(full_df)}**")
+
+    # Sub-tabs for different analytics views
+    analytics_tabs = st.tabs([
+        "📊 Configuration Status",
+        "👥 Assignee Performance",
+        "🌍 Regional Insights"
+    ])
+
+    # Tab 1: Configuration Status
+    with analytics_tabs[0]:
+        render_configuration_analytics(calculator, full_df, "YTD")
+
+    # Tab 2: Assignee Performance
+    with analytics_tabs[1]:
+        render_assignee_analytics(calculator, full_df, "YTD")
+
+    # Tab 3: Regional Insights
+    with analytics_tabs[2]:
+        render_regional_analytics(calculator, full_df, "YTD")
+
+
+def render_analytics_tab(full_df: pd.DataFrame, period_name: str):
+    """
+    Main function to render Analytics tab with month-by-month breakdown
+
+    Args:
+        full_df: Full DataFrame (all months)
+        period_name: Not used (kept for compatibility)
+    """
+
+    if full_df.empty:
+        st.warning("No data available for analytics")
+        return
+
+    st.markdown("## 📈 Analytics Dashboard")
+
+    # Initialize calculator
+    calculator = ARCAnalyticsCalculator(full_df)
+
+    # Get unique months from data
+    full_df['Month Name'] = pd.to_datetime(full_df['Go Live Date']).dt.strftime('%B')
+    months = ['September', 'October', 'November']  # Fixed order
+
+    # Create tabs for each month + YTD
+    tab_labels = months + ['YTD (All Months)']
+    tabs = st.tabs(tab_labels)
+
+    # Render each month
+    for idx, month in enumerate(months):
+        with tabs[idx]:
+            month_df = full_df[full_df['Month Name'] == month]
+            render_month_analytics(calculator, month, month_df)
+
+    # Render YTD
+    with tabs[-1]:
+        render_ytd_analytics(calculator, full_df)
 
 
 def render_configuration_analytics(calculator, filtered_df, period_name):
@@ -130,62 +178,6 @@ def render_configuration_analytics(calculator, filtered_df, period_name):
     
     for insight in insights:
         st.markdown(insight)
-
-
-def render_timeline_analytics(calculator, filtered_df, period_name):
-    """Render Timeline Analysis"""
-    
-    st.subheader(f"⏱️ Timeline Analysis - {period_name}")
-    
-    metrics = calculator.get_timeline_analytics(filtered_df)
-    
-    # Summary metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("On Track", metrics['on_track'], help="More than threshold days remaining")
-    
-    with col2:
-        st.metric("Critical", metrics['critical'], help="Between threshold and escalation")
-    
-    with col3:
-        st.metric("Escalated", metrics['escalated'], help="Less than escalation threshold")
-    
-    with col4:
-        st.metric("Avg Days to Go Live", f"{metrics['avg_days_to_go_live']:.0f}")
-    
-    st.markdown("---")
-    
-    # Implementation type breakdown
-    st.subheader("Implementation Type Distribution")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Conquest", metrics['conquest_count'])
-        st.caption("Threshold: 60/30 days")
-    
-    with col2:
-        st.metric("Buy/Sell", metrics['buysell_count'])
-        st.caption("Threshold: 15/3 days")
-    
-    with col3:
-        st.metric("New Point", metrics['newpoint_count'])
-        st.caption("Threshold: 15/3 days")
-    
-    # Key Insights
-    st.markdown("---")
-    st.subheader("💡 Key Insights")
-    
-    total = metrics['on_track'] + metrics['critical'] + metrics['escalated']
-    if total > 0:
-        escalated_pct = (metrics['escalated'] / total * 100)
-        if escalated_pct > 20:
-            st.markdown(f"🔴 **High Risk**: {escalated_pct:.1f}% of dealerships are in escalated status")
-        elif escalated_pct > 10:
-            st.markdown(f"⚠️ **Medium Risk**: {escalated_pct:.1f}% of dealerships are in escalated status")
-        else:
-            st.markdown(f"✅ **Low Risk**: Only {escalated_pct:.1f}% of dealerships are in escalated status")
 
 
 def render_assignee_analytics(calculator, filtered_df, period_name):
