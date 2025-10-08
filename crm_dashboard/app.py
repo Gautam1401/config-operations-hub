@@ -21,12 +21,14 @@ from shared.styles import (
     render_modern_header,
     render_upcoming_week_alert
 )
+from crm_dashboard.analytics.calculator import CRMAnalyticsCalculator
+from crm_dashboard.analytics.renderer import render_analytics_tab as render_analytics_content
 
 
 
 # Dashboard Version
-__version__ = "1.1.8"
-__last_updated__ = "2025-10-08 17:59:23 IST"
+__version__ = "1.2.0"
+__last_updated__ = "2025-10-08 19:30:00 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""
@@ -470,20 +472,20 @@ def render_data_tab(processor: CRMDataProcessor):
         render_go_live_testing_tab(processor, filtered_df)
 
 
-def render_analytics_tab():
-    """Render Analytics tab (placeholder)"""
-    
-    st.markdown("### 📈 Analytics")
-    st.info("👷 Analytics tab coming soon!")
-    
-    st.markdown("""
-    **Planned Analytics Features:**
-    - Configuration trends over time
-    - Pre Go Live completion rates
-    - Go Live Testing success metrics
-    - Regional performance comparison
-    - Assignee workload distribution
-    """)
+def render_analytics_tab(processor: CRMDataProcessor):
+    """Render Analytics tab with full analytics"""
+
+    # Get current date filter from session state
+    date_filter = st.session_state.get('crm_date_filter', 'current_month')
+
+    # Get filtered data based on date filter
+    filtered_df = processor.filter_by_date_range(date_filter)
+
+    # Create analytics calculator
+    calculator = CRMAnalyticsCalculator(processor.df)
+
+    # Render analytics content
+    render_analytics_content(calculator, filtered_df, date_filter)
 
 
 def render_crm_dashboard():
@@ -504,12 +506,12 @@ def render_crm_dashboard():
     
     # Main tabs
     tab1, tab2 = st.tabs(["📊 Data", "📈 Analytics"])
-    
+
     with tab1:
         render_data_tab(processor)
-    
+
     with tab2:
-        render_analytics_tab()
+        render_analytics_tab(processor)
 
 
 # For standalone testing
