@@ -175,24 +175,31 @@ def render_assignee_analytics(calculator: CRMAnalyticsCalculator, filtered_df: p
     """Render Assignee Analytics"""
     st.markdown("### 👤 Assignee Analytics")
 
-    # Calculate metrics
-    metrics = calculator.get_assignee_analytics(filtered_df)
+    try:
+        # Calculate metrics
+        metrics = calculator.get_assignee_analytics(filtered_df)
 
-    # Sub-tabs for different assignee categories
-    tab1, tab2, tab3 = st.tabs([
-        "📋 Configuration",
-        "✅ Pre Go Live",
-        "🧪 Go Live Testing"
-    ])
+        # Sub-tabs for different assignee categories
+        tab1, tab2, tab3 = st.tabs([
+            "📋 Configuration",
+            "✅ Pre Go Live",
+            "🧪 Go Live Testing"
+        ])
 
-    with tab1:
-        render_assignee_performance(metrics['configuration'], "Configuration")
+        with tab1:
+            render_assignee_performance(metrics['configuration'], "Configuration")
 
-    with tab2:
-        render_assignee_performance(metrics['pre_go_live'], "Pre Go Live")
+        with tab2:
+            render_assignee_performance(metrics['pre_go_live'], "Pre Go Live")
 
-    with tab3:
-        render_assignee_performance(metrics['go_live_testing'], "Go Live Testing")
+        with tab3:
+            render_assignee_performance(metrics['go_live_testing'], "Go Live Testing")
+
+    except Exception as e:
+        st.error(f"Error rendering assignee analytics: {str(e)}")
+        print(f"[ERROR Assignee Analytics] {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 
 def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, full_df: pd.DataFrame):

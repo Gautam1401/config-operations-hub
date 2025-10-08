@@ -27,8 +27,8 @@ from crm_dashboard.analytics.renderer import render_analytics_tab as render_anal
 
 
 # Dashboard Version
-__version__ = "1.3.0"
-__last_updated__ = "2025-10-08 20:30:00 IST"
+__version__ = "1.3.1"
+__last_updated__ = "2025-10-08 21:00:00 IST"
 
 def initialize_session_state():
     """Initialize session state variables for CRM dashboard"""

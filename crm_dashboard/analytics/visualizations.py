@@ -314,9 +314,12 @@ def render_assignee_performance(assignee_data: Dict, category: str):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Table
+        # Table - format completion rate
+        display_df = df[['Assignee', 'total', 'in_scope', 'out_of_scope', 'completion_rate']].copy()
+        display_df['completion_rate'] = display_df['completion_rate'].apply(lambda x: f"{x:.2f}")
+
         st.dataframe(
-            df[['Assignee', 'total', 'in_scope', 'out_of_scope', 'completion_rate']].rename(columns={
+            display_df.rename(columns={
                 'total': 'Total',
                 'in_scope': 'In Scope',
                 'out_of_scope': 'Out of Scope',
@@ -352,9 +355,12 @@ def render_assignee_performance(assignee_data: Dict, category: str):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Table
+        # Table - format GTG rate
+        display_df = df[['Assignee', 'total', 'gtg', 'gtg_rate']].copy()
+        display_df['gtg_rate'] = display_df['gtg_rate'].apply(lambda x: f"{x:.2f}")
+
         st.dataframe(
-            df[['Assignee', 'total', 'gtg', 'gtg_rate']].rename(columns={
+            display_df.rename(columns={
                 'total': 'Total',
                 'gtg': 'GTG',
                 'gtg_rate': 'GTG Rate (%)'
@@ -389,9 +395,12 @@ def render_assignee_performance(assignee_data: Dict, category: str):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Table
+        # Table - format GTG rate
+        display_df = df[['Assignee', 'total', 'gtg', 'blockers', 'gtg_rate']].copy()
+        display_df['gtg_rate'] = display_df['gtg_rate'].apply(lambda x: f"{x:.2f}")
+
         st.dataframe(
-            df[['Assignee', 'total', 'gtg', 'blockers', 'gtg_rate']].rename(columns={
+            display_df.rename(columns={
                 'total': 'Total',
                 'gtg': 'GTG',
                 'blockers': 'Blockers',
