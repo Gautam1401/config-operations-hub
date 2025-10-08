@@ -27,8 +27,8 @@ from shared.styles import (
 
 
 # Dashboard Version
-__version__ = "1.1.7"
-__last_updated__ = "2025-10-08 17:38:38 IST"
+__version__ = "1.1.8"
+__last_updated__ = "2025-10-08 17:59:23 IST"
 
 def initialize_session_state():
     """Initialize session state variables for Integration dashboard"""
@@ -100,12 +100,18 @@ def render_date_filter():
     next_month = datetime.now().month + 1 if datetime.now().month < 12 else 1
     next_month_year = datetime.now().year if datetime.now().month < 12 else datetime.now().year + 1
     next_month_name = datetime(next_month_year, next_month, 1).strftime('%B')  # e.g., 'November'
+    two_months = datetime.now().month + 2
+    two_months_year = datetime.now().year
+    if two_months > 12:
+        two_months = two_months - 12
+        two_months_year += 1
+    two_months_name = datetime(two_months_year, two_months, 1).strftime('%B')  # e.g., 'December'
     
     # Dynamic filter options with actual month names
     filter_options_dynamic = {
         'current_month': current_month_name,
         'next_month': next_month_name,
-        'two_months': '2 Months From Now',
+        'two_months': two_months_name,
         'ytd': 'YTD (Year to Date)'
     }
     
