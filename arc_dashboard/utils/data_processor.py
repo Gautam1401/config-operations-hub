@@ -320,11 +320,11 @@ class ARCDataProcessor:
             display_df = display_df.rename(columns={'Line of Business': 'Module'})
         
         # Format Go Live Date
-        display_df['Go Live Date'] = display_df['Go Live Date'].dt.strftime('%d-%b-%Y')
+        display_df['Go Live Date'] = pd.to_datetime(display_df['Go Live Date']).dt.strftime('%d-%b-%Y')
 
         # Format Days to Go Live: Show "Rolled Out" for negative values
         display_df['Days to Go Live'] = display_df['Days to Go Live'].apply(
-            lambda x: "Rolled Out" if x < 0 else str(int(x))
+            lambda x: "Rolled Out" if pd.notna(x) and x < 0 else (str(int(x)) if pd.notna(x) else "")
         )
         
         print(f"[DEBUG DataProcessor] Display DataFrame ready: {len(display_df)} records, columns: {display_df.columns.tolist()}")

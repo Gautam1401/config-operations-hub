@@ -1,1 +1,10 @@
-{"admins": [], "last_updated": "2025-10-06 21:00:00", "updated_by": "system"}
+{
+  "admins": [
+    "kthakur@tekion.com",
+    "jyothik@tekion.com",
+    "sujathar@tekion.com",
+    "sunilks@tekion.com"
+  ],
+  "last_updated": "2025-10-09 17:47:38",
+  "updated_by": "gdnaresh@tekion.com"
+}

@@ -140,20 +140,26 @@ class RegressionDataProcessor:
     def filter_by_implementation_type(self, impl_type: str, df: pd.DataFrame) -> pd.DataFrame:
         """
         Filter data by implementation type
-        
+
         Args:
             impl_type: Implementation type ('Conquest', 'Buy/Sell', 'Enterprise', 'New Point', 'All')
             df: DataFrame to filter
-            
+
         Returns:
             Filtered DataFrame
         """
         if impl_type == 'All':
             return df.copy()
         else:
-            filtered = df[df['Type of Implementation'] == impl_type].copy()
-            print(f"[DEBUG Regression Processor] Filtered by {impl_type}: {len(filtered)} records")
-            return filtered
+            # Use the correct column name: 'Implementation Type' (not 'Type of Implementation')
+            impl_col = find_column(df, ['Implementation Type', 'Type of Implementation'])
+            if impl_col:
+                filtered = df[df[impl_col] == impl_type].copy()
+                print(f"[DEBUG Regression Processor] Filtered by {impl_type}: {len(filtered)} records")
+                return filtered
+            else:
+                print(f"[WARNING Regression Processor] Implementation Type column not found")
+                return df.copy()
     
     def get_regions(self, df: Optional[pd.DataFrame] = None) -> List[str]:
         """Get unique regions from data"""
@@ -252,18 +258,26 @@ class RegressionDataProcessor:
         Returns:
             Display-ready DataFrame
         """
+        # Check if Days to Go Live Display exists, otherwise create it
+        if 'Days to Go Live Display' not in df.columns and 'Days to Go Live' in df.columns:
+            df['Days to Go Live Display'] = df['Days to Go Live'].apply(
+                lambda x: 'Rolled Out' if pd.notna(x) and x < 0 else (str(int(x)) if pd.notna(x) else '')
+            )
+
         display_df = df[[
             'Dealership Name',
             'Go Live Date',
-            'SIM Start Date',
+            'Days to Go Live Display',
             'Assignee',
             'Region',
             'Status'
         ]].copy()
-        
+
         # Format dates
         display_df['Go Live Date'] = pd.to_datetime(display_df['Go Live Date']).dt.strftime('%d-%b-%Y')
-        display_df['SIM Start Date'] = pd.to_datetime(display_df['SIM Start Date']).dt.strftime('%d-%b-%Y')
+
+        # Rename for display
+        display_df = display_df.rename(columns={'Days to Go Live Display': 'Days to Go Live'})
         
         # Replace None/NaN in Status with empty string
         display_df['Status'] = display_df['Status'].fillna('')

@@ -462,19 +462,8 @@ def render_month_data(processor: ARCDataProcessor, month_key: str, month_name: s
                         kpi_filtered_df["Region"] == st.session_state.selected_region
                     ]
 
-                # Prepare display dataframe
-                display_df = region_filtered_df[[
-                    'Dealership Name',
-                    'Go Live Date',
-                    'Days to Go Live',
-                    'Type of Implementation',
-                    'Assigned To',
-                    'Region',
-                    module_col
-                ]].copy()
-
-                # Rename module status column for clarity
-                display_df.rename(columns={module_col: 'Status'}, inplace=True)
+                # Use get_display_dataframe to properly format dates and days
+                display_df = processor.get_display_dataframe(region_filtered_df)
 
                 # Render table
                 st.markdown(f"### 📊 Data Table")
