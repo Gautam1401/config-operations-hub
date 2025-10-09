@@ -7,23 +7,24 @@ import pandas as pd
 from crm_dashboard.config.settings import STATUS_COLORS
 
 
-def render_data_table(df: pd.DataFrame, title: str = "Data Table", key_suffix: str = ""):
+def render_data_table(df: pd.DataFrame, title: str = "Data Table", key_suffix: str = "", month_key: str = ""):
     """
     Render data table with styling and export
-    
+
     Args:
         df: DataFrame to display
         title: Table title
         key_suffix: Unique suffix for widget keys
+        month_key: Month identifier for unique keys
     """
-    
+
     if df.empty:
         st.info("No data available for the selected filters")
         return
-    
+
     st.markdown(f"### 📊 {title}")
     st.markdown(f"**Total Records:** {len(df)}")
-    
+
     # Export button
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
@@ -31,7 +32,7 @@ def render_data_table(df: pd.DataFrame, title: str = "Data Table", key_suffix: s
         data=csv,
         file_name=f"crm_data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
         mime="text/csv",
-        key=f"download_btn_{key_suffix}"
+        key=f"download_btn_{key_suffix}_{month_key}"
     )
     
     # Style the dataframe

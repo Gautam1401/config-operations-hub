@@ -24,8 +24,9 @@ except ImportError:
 # Super Admin emails (can add/remove admins and have all admin privileges)
 SUPER_ADMIN_EMAILS = [
     "gdnaresh@tekion.com",
+    "mbasheer@tekion.com",
     # Add additional super admins here if needed in future:
-    # "superadmin2@tekion.com",
+    # "superadmin3@tekion.com",
 ]
 
 # Regular Admin emails (can upload/refresh data but cannot manage other admins)
@@ -135,8 +136,8 @@ def authenticate_user() -> Optional[str]:
     with st.form("login_form"):
         st.markdown("#### Please enter your Tekion email to continue")
         email = st.text_input(
-            "Email Address",
-            placeholder="yourname@tekion.com",
+            "Tekion Email Address",
+            placeholder="",
             help=f"Only {REQUIRED_DOMAIN} emails are allowed"
         )
         

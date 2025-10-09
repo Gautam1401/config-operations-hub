@@ -21,7 +21,7 @@ from crm_dashboard.analytics.visualizations import (
 )
 
 
-def render_configuration_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame):
+def render_configuration_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame, key_prefix: str = ""):
     """Render Configuration Analytics"""
     st.markdown("### 📊 Configuration Analytics")
     
@@ -41,11 +41,11 @@ def render_configuration_analytics(calculator: CRMAnalyticsCalculator, filtered_
     
     # Two columns layout
     col1, col2 = st.columns(2)
-    
+
     with col1:
         # Completion rate chart
-        render_completion_rate_chart(metrics)
-    
+        render_completion_rate_chart(metrics, key_prefix)
+
     with col2:
         # Configuration type distribution
         render_pie_chart(
@@ -53,13 +53,14 @@ def render_configuration_analytics(calculator: CRMAnalyticsCalculator, filtered_
             "📋 Configuration Type Distribution",
             ["Standard", "Copy"],
             ["standard", "copy"],
-            ["#3874F2", "#29C46F"]
+            ["#3874F2", "#29C46F"],
+            key_prefix
         )
-    
+
     st.markdown("---")
-    
+
     # Regional performance heatmap
-    render_regional_heatmap(metrics['regional_data'], "Configuration Status")
+    render_regional_heatmap(metrics['regional_data'], "Configuration Status", key_prefix)
     
     st.markdown("---")
     
@@ -67,7 +68,7 @@ def render_configuration_analytics(calculator: CRMAnalyticsCalculator, filtered_
     render_out_of_scope_analysis(metrics['out_of_scope_by_region'])
 
 
-def render_pre_go_live_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame):
+def render_pre_go_live_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame, key_prefix: str = ""):
     """Render Pre Go Live Analytics"""
     st.markdown("### 📊 Pre Go Live Analytics")
     
@@ -95,7 +96,8 @@ def render_pre_go_live_analytics(calculator: CRMAnalyticsCalculator, filtered_df
             "📋 Pre Go Live Status Distribution",
             ["GTG", "Partial", "Fail"],
             ["gtg", "partial", "fail"],
-            ["#29C46F", "#FFC107", "#F44336"]
+            ["#29C46F", "#FFC107", "#F44336"],
+            key_prefix
         )
     
     with col2:
@@ -106,13 +108,14 @@ def render_pre_go_live_analytics(calculator: CRMAnalyticsCalculator, filtered_df
             "🔍 Domain Updated vs Set Up Check",
             ["Both Complete", "Domain Only", "Setup Only", "Neither"],
             ["both_complete", "domain_only", "setup_only", "neither"],
-            ["#29C46F", "#3874F2", "#FFC107", "#F44336"]
+            ["#29C46F", "#3874F2", "#FFC107", "#F44336"],
+            key_prefix
         )
-    
+
     st.markdown("---")
-    
+
     # Regional performance heatmap
-    render_regional_heatmap(metrics['regional_data'], "Pre Go Live Status")
+    render_regional_heatmap(metrics['regional_data'], "Pre Go Live Status", key_prefix)
     
     st.markdown("---")
     
@@ -121,7 +124,7 @@ def render_pre_go_live_analytics(calculator: CRMAnalyticsCalculator, filtered_df
         render_at_risk_stores(metrics['at_risk_stores'])
 
 
-def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame):
+def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame, key_prefix: str = ""):
     """Render Go Live Testing Analytics"""
     st.markdown("### 📊 Go Live Testing Analytics")
     
@@ -141,19 +144,19 @@ def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtere
     
     # Two columns layout
     col1, col2 = st.columns(2)
-    
+
     with col1:
         # Test pass rates
-        render_test_pass_rates(metrics['test_pass_rates'])
-    
+        render_test_pass_rates(metrics['test_pass_rates'], key_prefix)
+
     with col2:
         # Score distribution
-        render_score_distribution(metrics['score_distribution'])
-    
+        render_score_distribution(metrics['score_distribution'], key_prefix)
+
     st.markdown("---")
-    
+
     # Regional performance heatmap
-    render_regional_heatmap(metrics['regional_data'], "Go Live Testing Status")
+    render_regional_heatmap(metrics['regional_data'], "Go Live Testing Status", key_prefix)
     
     st.markdown("---")
     
@@ -171,7 +174,7 @@ def render_go_live_testing_analytics(calculator: CRMAnalyticsCalculator, filtere
             st.info("💡 Action: Investigate why these stores have data issues and resolve to enable testing")
 
 
-def render_assignee_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame):
+def render_assignee_analytics(calculator: CRMAnalyticsCalculator, filtered_df: pd.DataFrame, key_prefix: str = ""):
     """Render Assignee Analytics"""
     st.markdown("### 👤 Assignee Analytics")
 
@@ -187,13 +190,13 @@ def render_assignee_analytics(calculator: CRMAnalyticsCalculator, filtered_df: p
         ])
 
         with tab1:
-            render_assignee_performance(metrics['configuration'], "Configuration")
+            render_assignee_performance(metrics['configuration'], "Configuration", f"{key_prefix}_assignee")
 
         with tab2:
-            render_assignee_performance(metrics['pre_go_live'], "Pre Go Live")
+            render_assignee_performance(metrics['pre_go_live'], "Pre Go Live", f"{key_prefix}_assignee")
 
         with tab3:
-            render_assignee_performance(metrics['go_live_testing'], "Go Live Testing")
+            render_assignee_performance(metrics['go_live_testing'], "Go Live Testing", f"{key_prefix}_assignee")
 
     except Exception as e:
         st.error(f"Error rendering assignee analytics: {str(e)}")
@@ -210,6 +213,9 @@ def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, 
     st.markdown(f"### 📅 {month_name}")
     st.info(f"Total stores in {month_name}: **{len(month_df)}**")
 
+    # Create unique key prefix from month name
+    key_prefix = month_name.lower().replace(" ", "_")
+
     # Sub-tabs for different analytics
     tab1, tab2, tab3, tab4 = st.tabs([
         "📋 Configuration",
@@ -219,16 +225,16 @@ def render_month_analytics(calculator: CRMAnalyticsCalculator, month_name: str, 
     ])
 
     with tab1:
-        render_configuration_analytics(calculator, month_df)
+        render_configuration_analytics(calculator, month_df, f"{key_prefix}_config")
 
     with tab2:
-        render_pre_go_live_analytics(calculator, month_df)
+        render_pre_go_live_analytics(calculator, month_df, f"{key_prefix}_pregl")
 
     with tab3:
-        render_go_live_testing_analytics(calculator, month_df)
+        render_go_live_testing_analytics(calculator, month_df, f"{key_prefix}_golive")
 
     with tab4:
-        render_assignee_analytics(calculator, month_df)
+        render_assignee_analytics(calculator, month_df, key_prefix)
 
 
 def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):
@@ -245,16 +251,16 @@ def render_ytd_analytics(calculator: CRMAnalyticsCalculator, full_df: pd.DataFra
     ])
 
     with tab1:
-        render_configuration_analytics(calculator, full_df)
+        render_configuration_analytics(calculator, full_df, "ytd_config")
 
     with tab2:
-        render_pre_go_live_analytics(calculator, full_df)
+        render_pre_go_live_analytics(calculator, full_df, "ytd_pregl")
 
     with tab3:
-        render_go_live_testing_analytics(calculator, full_df)
+        render_go_live_testing_analytics(calculator, full_df, "ytd_golive")
 
     with tab4:
-        render_assignee_analytics(calculator, full_df)
+        render_assignee_analytics(calculator, full_df, "ytd")
 
 
 def render_analytics_tab(calculator: CRMAnalyticsCalculator, full_df: pd.DataFrame):

@@ -61,37 +61,32 @@ class ARCDataProcessor:
 
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by month name
+        Filter data by month name (dynamically handles all 12 months)
 
         Args:
-            filter_type: 'september', 'october', 'november', or 'ytd'
+            filter_type: lowercase month name ('january', 'february', etc.) or 'ytd'
 
         Returns:
             pd.DataFrame: Filtered data
         """
-        if filter_type == 'september':
-            # September 2025
-            mask = (self.df['Go Live Date'].dt.month == 9) & \
-                   (self.df['Go Live Date'].dt.year == 2025)
-            return self.df[mask].copy()
-
-        elif filter_type == 'october':
-            # October 2025
-            mask = (self.df['Go Live Date'].dt.month == 10) & \
-                   (self.df['Go Live Date'].dt.year == 2025)
-            return self.df[mask].copy()
-
-        elif filter_type == 'november':
-            # November 2025
-            mask = (self.df['Go Live Date'].dt.month == 11) & \
-                   (self.df['Go Live Date'].dt.year == 2025)
-            return self.df[mask].copy()
-
-        elif filter_type == 'ytd':
+        if filter_type == 'ytd':
             # YTD: All data (entire dataset)
             return self.df.copy()
 
+        # Map month names to numbers
+        month_map = {
+            'january': 1, 'february': 2, 'march': 3, 'april': 4,
+            'may': 5, 'june': 6, 'july': 7, 'august': 8,
+            'september': 9, 'october': 10, 'november': 11, 'december': 12
+        }
+
+        if filter_type.lower() in month_map:
+            month_num = month_map[filter_type.lower()]
+            # Filter by month (any year in the data)
+            mask = self.df['Go Live Date'].dt.month == month_num
+            return self.df[mask].copy()
         else:
+            # Unknown filter, return all data
             return self.df.copy()
     
     def get_kpi_counts(self, df: Optional[pd.DataFrame] = None) -> Dict[str, int]:

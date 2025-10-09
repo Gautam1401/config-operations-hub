@@ -16,6 +16,7 @@ import pandas as pd
 from datetime import datetime
 import sys
 from pathlib import Path
+import calendar
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -262,31 +263,31 @@ def render_sidebar(processor: ARCDataProcessor):
 # UI RENDERING FUNCTIONS
 # ============================================================================
 
-def render_kpi_cards_arc(kpis: dict):
+def render_kpi_cards_arc(kpis: dict, month_key: str = ""):
     """Render KPI cards with aligned buttons"""
     # Build KPI cards HTML
     cards_html = '<div class="kpi-row">'
-    
+
     kpi_colors = {
         'Total Go Live': 'kpi-accent',
         'Completed': 'kpi-success',
         'WIP': 'kpi-warning',
         'Not Configured': 'kpi-grey'
     }
-    
+
     for kpi_name, kpi_value in kpis.items():
         color_class = kpi_colors.get(kpi_name, 'kpi-grey')
         selected_class = 'selected' if kpi_name == st.session_state.selected_kpi else ''
         cards_html += f'<div class="kpi-card {color_class} {selected_class}">{kpi_value}<br /><span style="font-size:0.55em;">{kpi_name}</span></div>'
-    
+
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
-    
+
     # Handle button clicks
     cols = st.columns(len(kpis))
     for idx, kpi_name in enumerate(kpis.keys()):
         with cols[idx]:
-            if st.button(f"{kpi_name}", key=f"arc_kpi_btn_{kpi_name}"):
+            if st.button(f"{kpi_name}", key=f"arc_kpi_btn_{kpi_name}_{month_key}"):
                 on_kpi_click(kpi_name)
                 st.rerun()
 
@@ -347,7 +348,7 @@ def render_lob_cards_arc(lob_counts: dict):
                 st.rerun()
 
 
-def render_module_cards_arc():
+def render_module_cards_arc(month_key: str):
     """Render Module selection cards (NEW FLOW - Level 1)"""
     st.markdown("### 📦 Select Module")
 
@@ -367,48 +368,23 @@ def render_module_cards_arc():
     cols = st.columns(len(modules))
     for idx, module in enumerate(modules):
         with cols[idx]:
-            if st.button(f"{module}", key=f"arc_module_btn_{module}"):
+            if st.button(f"{module}", key=f"arc_module_btn_{module}_{month_key}"):
                 on_module_click(module)
                 st.rerun()
 
 
-def render_data_tab(processor: ARCDataProcessor):
-    """
-    Render the Data tab with NEW interactive drill-down flow
-    NEW FLOW: Module → KPI → Region → Table
-    """
-
-    # Month Filter at the top
-    st.markdown("### 📅 Select Month")
-
-    month_options = ['September', 'October', 'November', 'YTD (All Months)']
-    month_keys = ['september', 'october', 'november', 'ytd']
-
-    # Get current index
-    current_idx = month_keys.index(st.session_state.date_filter) if st.session_state.date_filter in month_keys else 1
-
-    month_option = st.radio(
-        "Select Month",
-        month_options,
-        index=current_idx,
-        horizontal=True,
-        key="arc_month_filter",
-        label_visibility="collapsed"
-    )
-
-    # Map selection to filter type
-    selected_idx = month_options.index(month_option)
-    st.session_state.date_filter = month_keys[selected_idx]
-
-    st.markdown("---")
+def render_month_data(processor: ARCDataProcessor, month_key: str, month_name: str):
+    """Render data for a specific month"""
 
     # Apply date filter
-    filtered_df = processor.filter_by_date_range(st.session_state.date_filter)
+    filtered_df = processor.filter_by_date_range(month_key)
+
+    st.info(f"Total dealerships in {month_name}: **{len(filtered_df)}**")
 
     # ========================================================================
     # LEVEL 1: MODULE SELECTION (Parts / Service / Accounting)
     # ========================================================================
-    render_module_cards_arc()
+    render_module_cards_arc(month_key)
 
     st.divider()
 
@@ -431,7 +407,7 @@ def render_data_tab(processor: ARCDataProcessor):
         }
 
         st.markdown(f"### 📈 {st.session_state.selected_module} KPIs")
-        render_kpi_cards_arc(module_kpis)
+        render_kpi_cards_arc(module_kpis, month_key)
 
         st.divider()
 
@@ -468,7 +444,8 @@ def render_data_tab(processor: ARCDataProcessor):
                 regions,
                 st.session_state.selected_region,
                 on_click=on_region_click,
-                counts=region_counts
+                counts=region_counts,
+                month_key=month_key
             )
 
             st.divider()
@@ -505,7 +482,8 @@ def render_data_tab(processor: ARCDataProcessor):
                 render_data_table(
                     display_df,
                     title=f"{st.session_state.selected_module} - {st.session_state.selected_kpi} - {st.session_state.selected_region}",
-                    show_export=True
+                    show_export=True,
+                    month_key=month_key
                 )
             else:
                 # No region selected
@@ -518,22 +496,62 @@ def render_data_tab(processor: ARCDataProcessor):
         st.info("👆 Click a module card above to begin")
 
 
-def render_analytics_tab():
-    """Render the Analytics tab (placeholder for future)"""
-    
-    st.subheader("📊 Analytics")
-    st.info("Analytics visualizations will be added here in future updates.")
+def get_dynamic_months(df: pd.DataFrame):
+    """
+    Dynamically detect all months from data and return tab labels, keys, and full names
+
+    Returns:
+        tuple: (tab_labels, month_keys, month_names)
+        - tab_labels: 3-letter month abbreviations (Jan, Feb, etc.) + YTD
+        - month_keys: lowercase month names (january, february, etc.) + ytd
+        - month_names: full month names (January, February, etc.) + YTD (All Months)
+    """
+    # Get unique year-month combinations from data (use copy to avoid modifying original)
+    temp_df = df.copy()
+
+    # Filter out rows with NaN/null dates
+    temp_df = temp_df[temp_df['Go Live Date'].notna()]
+
+    if len(temp_df) == 0:
+        # No valid dates, return empty lists with just YTD
+        return ['YTD'], ['ytd'], ['YTD (All Months)']
+
+    temp_df['YearMonth'] = temp_df['Go Live Date'].dt.to_period('M')
+    unique_months = sorted(temp_df['YearMonth'].dropna().unique())
+
+    tab_labels = []
+    month_keys = []
+    month_names = []
+
+    for ym in unique_months:
+        month_num = int(ym.month)  # Convert to int for calendar lookup
+        month_full = calendar.month_name[month_num]  # January, February, etc.
+        month_abbr = calendar.month_abbr[month_num]  # Jan, Feb, etc.
+
+        tab_labels.append(month_abbr)
+        month_keys.append(month_full.lower())
+        month_names.append(month_full)
+
+    # Add YTD at the end
+    tab_labels.append('YTD')
+    month_keys.append('ytd')
+    month_names.append('YTD (All Months)')
+
+    return tab_labels, month_keys, month_names
 
 
-    # Placeholder for future charts
-    st.markdown("""
-    ### Planned Analytics:
-    - 📈 Trend analysis over time
-    - 🗺️ Geographic distribution
-    - 📊 Module performance comparison
-    - ⏱️ Time-to-completion metrics
-    - 👥 Team performance analytics
-    """)
+def render_data_tab(processor: ARCDataProcessor):
+    """Render Data tab with dynamic month tabs"""
+
+    # Get dynamic months from data
+    tab_labels, month_keys, month_names = get_dynamic_months(processor.df)
+
+    # Create month tabs
+    month_tabs = st.tabs(tab_labels)
+
+    for idx, (tab, month_key, month_name) in enumerate(zip(month_tabs, month_keys, month_names)):
+        with tab:
+            render_month_data(processor, month_key, month_name)
 
 
 # ============================================================================

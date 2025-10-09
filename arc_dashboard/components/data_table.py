@@ -14,17 +14,19 @@ def render_data_table(
     title: str = "Data Table",
     show_export: bool = True,
     export_filename: Optional[str] = None,
-    height: int = 400
+    height: int = 400,
+    month_key: str = ""
 ):
     """
     Render an interactive data table with export functionality
-    
+
     Args:
         df: DataFrame to display
         title: Table title
         show_export: Whether to show export button
         export_filename: Custom filename for export (auto-generated if None)
         height: Table height in pixels
+        month_key: Month identifier for unique keys
     """
     
     # Display title and record count
@@ -50,7 +52,7 @@ def render_data_table(
             data=csv,
             file_name=export_filename,
             mime="text/csv",
-            key=f"download_{title.replace(' ', '_')}"
+            key=f"download_{title.replace(' ', '_')}_{month_key}"
         )
     
     # Display table

@@ -9,6 +9,7 @@ import datetime
 import os
 import time
 from pathlib import Path
+import calendar
 
 from integration_dashboard.data.mock_data import load_integration_data
 from integration_dashboard.utils.data_processor import IntegrationDataProcessor
@@ -42,9 +43,6 @@ def initialize_session_state():
     if 'integration_selected_region' not in st.session_state:
         st.session_state.integration_selected_region = None
 
-    if 'integration_data_processor' not in st.session_state:
-        st.session_state.integration_data_processor = None
-
     print(f"[DEBUG Integration] Session State: date_filter={st.session_state.integration_date_filter}, "
           f"KPI={st.session_state.integration_selected_kpi}, "
           f"Region={st.session_state.integration_selected_region}")
@@ -65,13 +63,9 @@ def get_excel_last_modified() -> str:
         return f"Error: {str(e)}"
 
 
-def load_data(force_reload: bool = False) -> IntegrationDataProcessor:
+@st.cache_data(ttl=300, show_spinner=False)  # Cache for 5 minutes - auto-refresh
+def load_data() -> IntegrationDataProcessor:
     """Load and process Integration data"""
-
-    # Check if we should use cached data
-    if not force_reload and st.session_state.integration_data_processor is not None:
-        print("[DEBUG Integration] Using cached data processor")
-        return st.session_state.integration_data_processor
 
     print("[DEBUG Integration] Loading fresh data from Excel")
     df = load_integration_data()
@@ -82,9 +76,6 @@ def load_data(force_reload: bool = False) -> IntegrationDataProcessor:
         print(f"[DEBUG Integration] Data shape: {df.shape}")
 
     processor = IntegrationDataProcessor(df)
-
-    # Cache the processor
-    st.session_state.integration_data_processor = processor
 
     return processor
 
@@ -201,14 +192,14 @@ def render_region_buttons(region_counts: dict):
                 st.rerun()
 
 
-def handle_kpi_click(kpis: dict):
+def handle_kpi_click(kpis: dict, month_key: str = ""):
     """Handle KPI card clicks using buttons"""
-    
+
     cols = st.columns(len(kpis))
-    
+
     for idx, (kpi_name, count) in enumerate(kpis.items()):
         with cols[idx]:
-            if st.button(f"{kpi_name}", key=f"integration_kpi_btn_{kpi_name}", help=f"Click to view {kpi_name} details"):
+            if st.button(f"{kpi_name}", key=f"integration_kpi_btn_{kpi_name}_{month_key}", help=f"Click to view {kpi_name} details"):
                 if st.session_state.integration_selected_kpi != kpi_name:
                     st.session_state.integration_selected_kpi = kpi_name
                     st.session_state.integration_selected_region = None
@@ -216,46 +207,31 @@ def handle_kpi_click(kpis: dict):
                     st.rerun()
 
 
-def handle_region_click(region_counts: dict):
+def handle_region_click(region_counts: dict, month_key: str = ""):
     """Handle region card clicks using buttons"""
-    
+
     active_regions = {region: count for region, count in region_counts.items() if count > 0}
-    
+
     if not active_regions:
         return
-    
+
     cols = st.columns(len(active_regions))
-    
+
     for idx, (region, count) in enumerate(active_regions.items()):
         with cols[idx]:
-            if st.button(f"{region}", key=f"integration_region_btn_{region}", help=f"Click to view {region} details"):
+            if st.button(f"{region}", key=f"integration_region_btn_{region}_{month_key}", help=f"Click to view {region} details"):
                 st.session_state.integration_selected_region = region
                 print(f"[DEBUG Integration] Region clicked: {region}")
                 st.rerun()
 
 
-def render_data_tab(processor: IntegrationDataProcessor):
-    """Render Data tab with sub-tabs"""
+def render_month_data_integration(processor: IntegrationDataProcessor, month_key: str, month_name: str):
+    """Render data for a specific month"""
 
-    # Show Excel last modified time and reload button
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        last_modified = get_excel_last_modified()
-        st.caption(f"📄 Excel last modified: **{last_modified}**")
-    with col2:
-        if st.button("🔄 Reload Latest Data", help="Reload data from Excel file"):
-            st.session_state.integration_data_processor = None
-            st.session_state.integration_selected_kpi = None
-            st.session_state.integration_selected_region = None
-            st.success("✅ Data reloaded successfully!")
-            st.rerun()
+    # Filter by date range
+    filtered_df = processor.filter_by_date_range(month_key)
 
-    st.markdown("---")
-
-    render_date_filter()
-
-    # Filter by date range using exact calendar month logic
-    filtered_df = processor.filter_by_date_range(st.session_state.integration_date_filter)
+    st.info(f"Total dealerships in {month_name}: **{len(filtered_df)}**")
     
     st.markdown("---")
     
@@ -266,7 +242,7 @@ def render_data_tab(processor: IntegrationDataProcessor):
     render_kpi_cards(kpis)
     
     # Handle KPI clicks
-    handle_kpi_click(kpis)
+    handle_kpi_click(kpis, month_key)
     
     # Show region banners if KPI is selected
     if st.session_state.integration_selected_kpi:
@@ -309,16 +285,86 @@ def render_data_tab(processor: IntegrationDataProcessor):
                     ]
             
             display_df = processor.get_display_dataframe(region_filtered_df)
-            
+
             render_data_table(
                 display_df,
                 title=f"{st.session_state.integration_selected_kpi} - {st.session_state.integration_selected_region}",
-                key_suffix="integration"
+                key_suffix=f"integration_{month_key}"
             )
         else:
             st.info("👆 Click a region banner above to view detailed data")
     else:
         st.info("👆 Click a KPI card above to view regional breakdown")
+
+
+def get_dynamic_months_integration(df: pd.DataFrame):
+    """
+    Dynamically detect all months from data and return tab labels, keys, and full names
+
+    Returns:
+        tuple: (tab_labels, month_keys, month_names)
+    """
+    # Get unique year-month combinations from data (use copy to avoid modifying original)
+    temp_df = df.copy()
+
+    # Filter out rows with NaN/null dates
+    temp_df = temp_df[temp_df['Go Live Date'].notna()]
+
+    if len(temp_df) == 0:
+        # No valid dates, return empty lists with just YTD
+        return ['YTD'], ['ytd'], ['YTD (All Months)']
+
+    temp_df['YearMonth'] = temp_df['Go Live Date'].dt.to_period('M')
+    unique_months = sorted(temp_df['YearMonth'].dropna().unique())
+
+    tab_labels = []
+    month_keys = []
+    month_names = []
+
+    for ym in unique_months:
+        month_num = int(ym.month)  # Convert to int for calendar lookup
+        month_full = calendar.month_name[month_num]  # January, February, etc.
+        month_abbr = calendar.month_abbr[month_num]  # Jan, Feb, etc.
+
+        tab_labels.append(month_abbr)
+        month_keys.append(month_full.lower())
+        month_names.append(month_full)
+
+    # Add YTD at the end
+    tab_labels.append('YTD')
+    month_keys.append('ytd')
+    month_names.append('YTD (All Months)')
+
+    return tab_labels, month_keys, month_names
+
+
+def render_data_tab(processor: IntegrationDataProcessor):
+    """Render Data tab with dynamic month tabs"""
+
+    # Show Excel last modified time and reload button
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        last_modified = get_excel_last_modified()
+        st.caption(f"📄 Excel last modified: **{last_modified}**")
+    with col2:
+        if st.button("🔄 Reload Latest Data", help="Clear cache and reload data from Excel file"):
+            st.cache_data.clear()
+            st.session_state.integration_selected_kpi = None
+            st.session_state.integration_selected_region = None
+            st.success("✅ Data reloaded successfully!")
+            st.rerun()
+
+    st.markdown("---")
+
+    # Get dynamic months from data
+    tab_labels, month_keys, month_names = get_dynamic_months_integration(processor.df)
+
+    # Create month tabs
+    month_tabs = st.tabs(tab_labels)
+
+    for idx, (tab, month_key, month_name) in enumerate(zip(month_tabs, month_keys, month_names)):
+        with tab:
+            render_month_data_integration(processor, month_key, month_name)
 
 
 def render_analytics_tab():

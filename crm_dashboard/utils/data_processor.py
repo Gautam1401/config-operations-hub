@@ -217,6 +217,13 @@ class CRMDataProcessor:
             # All blank/NA
             all_blank = all(pd.isna(val) or val == '' for val in [sample_adf, inbound, outbound, data_mig])
 
+            # Check if all tests are "Unable to Test"
+            all_unable = all(val in ['Unable to Test', 'Umable to Test'] for val in [sample_adf, inbound, outbound, data_mig] if pd.notna(val) and val != '')
+
+            # Unable to Test: All tests marked as "Unable to Test"
+            if all_unable and not all_blank:
+                return 'Unable to Test'
+
             # Data Incorrect: Past go-live but all tests are blank/None
             if is_rolled_out and all_blank:
                 return 'Data Incorrect'
@@ -267,37 +274,33 @@ class CRMDataProcessor:
     
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by date range using exact calendar month logic
+        Filter data by month name (dynamically handles all 12 months)
 
         Args:
-            filter_type: 'current_month', 'next_month', or 'ytd'
+            filter_type: lowercase month name ('january', 'february', etc.) or 'ytd'
 
         Returns:
             pd.DataFrame: Filtered data
         """
-        today = pd.Timestamp.today()
-
-        if filter_type == 'current_month':
-            # Current Month: Exact month and year match
-            mask = (self.df['Go Live Date'].dt.month == today.month) & \
-                   (self.df['Go Live Date'].dt.year == today.year)
-            filtered = self.df[mask].copy()
-
-        elif filter_type == 'next_month':
-            # Next Month: Calculate next month and year
-            next_month = (today.month % 12) + 1
-            next_month_year = today.year if today.month < 12 else today.year + 1
-            mask = (self.df['Go Live Date'].dt.month == next_month) & \
-                   (self.df['Go Live Date'].dt.year == next_month_year)
-            filtered = self.df[mask].copy()
-
-        elif filter_type == 'ytd':
-            # YTD: All data (entire dataset - past, present, and future)
+        if filter_type == 'ytd':
+            # YTD: All data (entire dataset)
             filtered = self.df.copy()
-
         else:
-            # All data
-            filtered = self.df.copy()
+            # Map month names to numbers
+            month_map = {
+                'january': 1, 'february': 2, 'march': 3, 'april': 4,
+                'may': 5, 'june': 6, 'july': 7, 'august': 8,
+                'september': 9, 'october': 10, 'november': 11, 'december': 12
+            }
+
+            if filter_type.lower() in month_map:
+                month_num = month_map[filter_type.lower()]
+                # Filter by month (any year in the data)
+                mask = self.df['Go Live Date'].dt.month == month_num
+                filtered = self.df[mask].copy()
+            else:
+                # Unknown filter, return all data
+                filtered = self.df.copy()
 
         print(f"[DEBUG CRMDataProcessor] Filtered by {filter_type}: {len(filtered)} records")
         return filtered
@@ -400,6 +403,7 @@ class CRMDataProcessor:
             'Go Live Blocker': len(df[df['Go Live Testing Status'].str.contains('Go Live Blocker', na=False)]),
             'Non-Blocker': len(df[df['Go Live Testing Status'].str.contains('Non-Blocker', na=False)]),
             'Fail': len(df[df['Go Live Testing Status'] == 'Fail']),
+            'Unable to Test': len(df[df['Go Live Testing Status'] == 'Unable to Test']),
             'Data Incorrect': len(df[df['Go Live Testing Status'] == 'Data Incorrect']),
         }
         

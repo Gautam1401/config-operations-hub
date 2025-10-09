@@ -190,60 +190,36 @@ class IntegrationDataProcessor:
     
     def filter_by_date_range(self, date_filter: str) -> pd.DataFrame:
         """
-        Filter data by date range using exact calendar month logic
+        Filter data by month name (dynamically handles all 12 months)
 
         Args:
-            date_filter: One of 'current_month', 'next_month', 'two_months', 'ytd'
+            date_filter: lowercase month name ('january', 'february', etc.) or 'ytd'
 
         Returns:
             Filtered DataFrame
         """
-        today = pd.Timestamp.today()
-        current_year = today.year
-        current_month = today.month
-
-        if date_filter == 'current_month':
-            # Current Month: Exact month and year match
-            mask = (self.df['Go Live Date'].dt.month == current_month) & \
-                   (self.df['Go Live Date'].dt.year == current_year)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Integration Processor] Current Month: {current_month}/{current_year}")
-
-        elif date_filter == 'next_month':
-            # Next Month: Calculate next month and year
-            next_month = current_month % 12 + 1
-            next_month_year = current_year + (current_month == 12)
-            mask = (self.df['Go Live Date'].dt.month == next_month) & \
-                   (self.df['Go Live Date'].dt.year == next_month_year)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Integration Processor] Next Month: {next_month}/{next_month_year}")
-
-        elif date_filter == 'two_months':
-            # 2 Months From Now: Calculate 2 months ahead
-            two_months = (current_month + 1) % 12 + 1
-            two_months_year = current_year + (current_month >= 11)
-            mask = (self.df['Go Live Date'].dt.month == two_months) & \
-                   (self.df['Go Live Date'].dt.year == two_months_year)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Integration Processor] 2 Months From Now: {two_months}/{two_months_year}")
-
-        elif date_filter == 'ytd':
-            # YTD: Current year only (Jan 1 to Dec 31 of current year)
-            ytd_start = pd.Timestamp(year=current_year, month=1, day=1)
-            ytd_end = pd.Timestamp(year=current_year, month=12, day=31)
-            mask = (self.df['Go Live Date'] >= ytd_start) & \
-                   (self.df['Go Live Date'] <= ytd_end)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Integration Processor] YTD: {current_year} ({len(filtered)} records)")
-
-        else:
+        if date_filter == 'ytd':
+            # YTD: All data (entire dataset)
             filtered = self.df.copy()
-        
+        else:
+            # Map month names to numbers
+            month_map = {
+                'january': 1, 'february': 2, 'march': 3, 'april': 4,
+                'may': 5, 'june': 6, 'july': 7, 'august': 8,
+                'september': 9, 'october': 10, 'november': 11, 'december': 12
+            }
+
+            if date_filter.lower() in month_map:
+                month_num = month_map[date_filter.lower()]
+                # Filter by month (any year in the data)
+                mask = self.df['Go Live Date'].dt.month == month_num
+                filtered = self.df[mask].copy()
+            else:
+                # Unknown filter, return all data
+                filtered = self.df.copy()
+
         print(f"[DEBUG Integration Processor] Filtered by {date_filter}: {len(filtered)} records")
-        print(f"[DEBUG Integration Processor] Current date: {today.date()}")
-        if len(filtered) > 0:
-            print(f"[DEBUG Integration Processor] Sample dates in filtered data: {filtered['Go Live Date'].head().tolist()}")
-        
+
         return filtered
     
     def get_kpis(self, df: pd.DataFrame) -> Dict[str, int]:

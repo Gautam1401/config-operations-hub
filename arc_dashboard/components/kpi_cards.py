@@ -71,24 +71,26 @@ def render_region_cards(
     regions: list,
     selected_region: Optional[str],
     on_click: Callable,
-    counts: Optional[Dict[str, int]] = None
+    counts: Optional[Dict[str, int]] = None,
+    month_key: str = ""
 ):
     """
     Render region selection as clickable cards
-    
+
     Args:
         regions: List of region names
         selected_region: Currently selected region
         on_click: Callback function when a region is clicked
         counts: Optional dictionary of region counts
+        month_key: Optional month key for unique button IDs
     """
-    
+
     st.subheader("Select Region")
-    
+
     # Create columns for regions (max 4 per row)
     regions_per_row = 4
     num_rows = (len(regions) + regions_per_row - 1) // regions_per_row
-    
+
     region_idx = 0
     for row in range(num_rows):
         cols = st.columns(regions_per_row)
@@ -98,19 +100,19 @@ def render_region_cards(
                 with cols[col_idx]:
                     # Determine if this region is selected
                     is_selected = (region == selected_region)
-                    
+
                     # Get count if available
                     count = counts.get(region, 0) if counts else 0
-                    
+
                     # Display as clickable button
                     if st.button(
                         f"{region}\n\n{count} records",
-                        key=f"region_card_{region}",
+                        key=f"region_card_{region}_{month_key}",
                         use_container_width=True,
                         type="primary" if is_selected else "secondary"
                     ):
                         on_click(region)
-                
+
                 region_idx += 1
 
 
@@ -119,10 +121,11 @@ def render_region_banners(
     regions: list,
     selected_region: Optional[str],
     on_click: Callable,
-    counts: Optional[Dict[str, int]] = None
+    counts: Optional[Dict[str, int]] = None,
+    month_key: str = ""
 ):
     """Backward compatibility wrapper"""
-    render_region_cards(regions, selected_region, on_click, counts)
+    render_region_cards(regions, selected_region, on_click, counts, month_key)
 
 
 def render_metric_card(label: str, value: str, delta: Optional[str] = None):

@@ -120,35 +120,19 @@ def main():
     
     with tab1:
         # Render ARC Configuration dashboard
-        try:
-            arc_app.render_arc_dashboard()
-        except Exception as e:
-            st.warning("⚠️ Dashboard is loading... Please wait or refresh the page.")
-            print(f"[ERROR ARC Dashboard] {str(e)}")
+        arc_app.render_arc_dashboard()
 
     with tab2:
         # Render CRM Configuration dashboard
-        try:
-            crm_app.render_crm_dashboard()
-        except Exception as e:
-            st.warning("⚠️ Dashboard is loading... Please wait or refresh the page.")
-            print(f"[ERROR CRM Dashboard] {str(e)}")
+        crm_app.render_crm_dashboard()
 
     with tab3:
         # Render Integration dashboard
-        try:
-            integration_app.render_integration_dashboard()
-        except Exception as e:
-            st.warning("⚠️ Dashboard is loading... Please wait or refresh the page.")
-            print(f"[ERROR Integration Dashboard] {str(e)}")
+        integration_app.render_integration_dashboard()
 
     with tab4:
         # Render Regression Testing dashboard
-        try:
-            regression_app.render_regression_dashboard()
-        except Exception as e:
-            st.warning("⚠️ Dashboard is loading... Please wait or refresh the page.")
-            print(f"[ERROR Regression Dashboard] {str(e)}")
+        regression_app.render_regression_dashboard()
 
 
 if __name__ == "__main__":

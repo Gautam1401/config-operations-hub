@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 from typing import Optional
 import datetime
+import calendar
 
 from crm_dashboard.data.mock_data import load_crm_data
 from crm_dashboard.utils.data_processor import CRMDataProcessor
@@ -116,27 +117,27 @@ def render_date_filter():
         st.rerun()
 
 
-def render_sub_tab_selector():
+def render_sub_tab_selector(month_key: str):
     """Render sub-tab selector"""
-    
+
     st.write("#### 🗂️ Select Category")
-    
+
     tab_options = list(SUB_TABS.values())
     tab_keys = list(SUB_TABS.keys())
-    
+
     current_idx = tab_keys.index(st.session_state.crm_sub_tab) if st.session_state.crm_sub_tab in tab_keys else 0
-    
+
     selected_label = st.radio(
         "",
         options=tab_options,
         index=current_idx,
         horizontal=True,
-        key="crm_sub_tab_radio",
+        key=f"crm_sub_tab_radio_{month_key}",
         label_visibility="collapsed"
     )
-    
+
     selected_key = tab_keys[tab_options.index(selected_label)]
-    
+
     if st.session_state.crm_sub_tab != selected_key:
         st.session_state.crm_sub_tab = selected_key
         st.session_state.crm_selected_kpi = None
@@ -184,11 +185,11 @@ def handle_region_click(region_counts: dict):
 # UI RENDERING FUNCTIONS
 # ============================================================================
 
-def render_kpi_cards_crm(kpis: dict, kpi_type: str):
+def render_kpi_cards_crm(kpis: dict, kpi_type: str, month_key: str = ""):
     """Render KPI cards with aligned buttons"""
     # Build KPI cards HTML
     cards_html = '<div class="kpi-row">'
-    
+
     kpi_colors = {
         # Configuration
         'Go Lives': 'kpi-accent',
@@ -205,27 +206,27 @@ def render_kpi_cards_crm(kpis: dict, kpi_type: str):
         'Go Live Blocker': 'kpi-error',
         'Non-Blocker': 'kpi-warning',
     }
-    
+
     for kpi_name, kpi_value in kpis.items():
         color_class = kpi_colors.get(kpi_name, 'kpi-grey')
         selected_class = 'selected' if kpi_name == st.session_state.crm_selected_kpi else ''
         cards_html += f'<div class="kpi-card {color_class} {selected_class}">{kpi_value}<br /><span style="font-size:0.55em;">{kpi_name}</span></div>'
-    
+
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
-    
+
     # Handle button clicks
     cols = st.columns(len(kpis))
     for idx, kpi_name in enumerate(kpis.keys()):
         with cols[idx]:
-            if st.button(f"{kpi_name}", key=f"crm_{kpi_type}_kpi_btn_{kpi_name}"):
+            if st.button(f"{kpi_name}", key=f"crm_{kpi_type}_kpi_btn_{kpi_name}_{month_key}"):
                 if st.session_state.crm_selected_kpi != kpi_name:
                     st.session_state.crm_selected_kpi = kpi_name
                     st.session_state.crm_selected_region = None
                     st.rerun()
 
 
-def render_region_cards_crm(region_counts: dict):
+def render_region_cards_crm(region_counts: dict, month_key: str = ""):
     """Render region cards with aligned buttons - includes 'All' option"""
     active_regions = {region: count for region, count in region_counts.items() if count > 0}
 
@@ -251,18 +252,18 @@ def render_region_cards_crm(region_counts: dict):
     cols = st.columns(len(all_regions))
     for idx, region in enumerate(all_regions.keys()):
         with cols[idx]:
-            if st.button(f"{region}", key=f"crm_region_btn_{region}"):
+            if st.button(f"{region}", key=f"crm_region_btn_{region}_{month_key}"):
                 st.session_state.crm_selected_region = region
                 st.rerun()
 
 
-def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame):
+def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame, month_key: str = ""):
     """Render Configuration sub-tab"""
-    
+
     kpis = processor.get_configuration_kpis(filtered_df)
-    
+
     # Render KPI cards with modern styling
-    render_kpi_cards_crm(kpis, "config")
+    render_kpi_cards_crm(kpis, "config", month_key)
     
     # Handle KPI clicks
     
@@ -284,7 +285,7 @@ def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFr
             )
         
         # Render region cards
-        render_region_cards_crm(region_counts)
+        render_region_cards_crm(region_counts, month_key)
         
         # Handle region clicks
         
@@ -309,7 +310,8 @@ def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFr
             render_data_table(
                 display_df,
                 title=f"{st.session_state.crm_selected_kpi} - {st.session_state.crm_selected_region}",
-                key_suffix="config"
+                key_suffix="config",
+                month_key=month_key
             )
         else:
             st.info("👆 Click a region banner above to view detailed data")
@@ -317,13 +319,13 @@ def render_configuration_tab(processor: CRMDataProcessor, filtered_df: pd.DataFr
         st.info("👆 Click a KPI card above to view regional breakdown")
 
 
-def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame):
+def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame, month_key: str = ""):
     """Render Pre Go Live Checks sub-tab"""
-    
+
     kpis = processor.get_pre_go_live_kpis(filtered_df)
-    
+
     # Render KPI cards
-    render_kpi_cards_crm(kpis, 'pregl')
+    render_kpi_cards_crm(kpis, 'pregl', month_key)
     
     if st.session_state.crm_selected_kpi:
         st.markdown("---")
@@ -343,7 +345,7 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
                 filtered_df
             )
         
-        render_region_cards_crm(region_counts)
+        render_region_cards_crm(region_counts, month_key)
         
         
         if st.session_state.crm_selected_region:
@@ -370,7 +372,8 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
             render_data_table(
                 display_df,
                 title=f"{st.session_state.crm_selected_kpi} - {st.session_state.crm_selected_region}",
-                key_suffix="pre_go_live"
+                key_suffix="pre_go_live",
+                month_key=month_key
             )
         else:
             st.info("👆 Click a region banner above to view detailed data")
@@ -379,17 +382,17 @@ def render_pre_go_live_tab(processor: CRMDataProcessor, filtered_df: pd.DataFram
 
 
 
-def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame):
+def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.DataFrame, month_key: str = ""):
     """Render Go Live Testing sub-tab"""
-    
+
     kpis = processor.get_go_live_testing_kpis(filtered_df)
-    
+
     # Show upcoming week banner (ONLY in Go Live Testing)
     upcoming_count = len(filtered_df[filtered_df['Is Upcoming Week'] == True])
     render_upcoming_week_alert(upcoming_count)
-    
+
     # Render KPI cards
-    render_kpi_cards_crm(kpis, 'pregl')
+    render_kpi_cards_crm(kpis, 'pregl', month_key)
     
     if st.session_state.crm_selected_kpi:
         st.markdown("---")
@@ -409,8 +412,8 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
                 st.session_state.crm_selected_kpi,
                 filtered_df
             )
-        
-        render_region_cards_crm(region_counts)
+
+        render_region_cards_crm(region_counts, month_key)
         
         
         if st.session_state.crm_selected_region:
@@ -443,7 +446,8 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
             render_data_table(
                 display_df,
                 title=f"{st.session_state.crm_selected_kpi} - {st.session_state.crm_selected_region}",
-                key_suffix="go_live_testing"
+                key_suffix="go_live_testing",
+                month_key=month_key
             )
         else:
             st.info("👆 Click a region banner above to view detailed data")
@@ -451,25 +455,78 @@ def render_go_live_testing_tab(processor: CRMDataProcessor, filtered_df: pd.Data
         st.info("👆 Click a KPI card above to view regional breakdown")
 
 
-def render_data_tab(processor: CRMDataProcessor):
-    """Render Data tab with sub-tabs"""
-    
-    render_date_filter()
-    
-    filtered_df = processor.filter_by_date_range(st.session_state.crm_date_filter)
-    
+def render_month_data_crm(processor: CRMDataProcessor, month_key: str, month_name: str):
+    """Render data for a specific month"""
+
+    filtered_df = processor.filter_by_date_range(month_key)
+
+    st.info(f"Total stores in {month_name}: **{len(filtered_df)}**")
+
+    render_sub_tab_selector(month_key)
+
     st.markdown("---")
-    
-    render_sub_tab_selector()
-    
-    st.markdown("---")
-    
+
     if st.session_state.crm_sub_tab == 'configuration':
-        render_configuration_tab(processor, filtered_df)
+        render_configuration_tab(processor, filtered_df, month_key)
     elif st.session_state.crm_sub_tab == 'pre_go_live':
-        render_pre_go_live_tab(processor, filtered_df)
+        render_pre_go_live_tab(processor, filtered_df, month_key)
     elif st.session_state.crm_sub_tab == 'go_live_testing':
-        render_go_live_testing_tab(processor, filtered_df)
+        render_go_live_testing_tab(processor, filtered_df, month_key)
+
+
+def get_dynamic_months_crm(df: pd.DataFrame):
+    """
+    Dynamically detect all months from data and return tab labels, keys, and full names
+
+    Returns:
+        tuple: (tab_labels, month_keys, month_names)
+    """
+    # Get unique year-month combinations from data (use copy to avoid modifying original)
+    temp_df = df.copy()
+
+    # Filter out rows with NaN/null dates
+    temp_df = temp_df[temp_df['Go Live Date'].notna()]
+
+    if len(temp_df) == 0:
+        # No valid dates, return empty lists with just YTD
+        return ['YTD'], ['ytd'], ['YTD (All Months)']
+
+    temp_df['YearMonth'] = temp_df['Go Live Date'].dt.to_period('M')
+    unique_months = sorted(temp_df['YearMonth'].dropna().unique())
+
+    tab_labels = []
+    month_keys = []
+    month_names = []
+
+    for ym in unique_months:
+        month_num = int(ym.month)  # Convert to int for calendar lookup
+        month_full = calendar.month_name[month_num]  # January, February, etc.
+        month_abbr = calendar.month_abbr[month_num]  # Jan, Feb, etc.
+
+        tab_labels.append(month_abbr)
+        month_keys.append(month_full.lower())
+        month_names.append(month_full)
+
+    # Add YTD at the end
+    tab_labels.append('YTD')
+    month_keys.append('ytd')
+    month_names.append('YTD (All Months)')
+
+    return tab_labels, month_keys, month_names
+
+
+def render_data_tab(processor: CRMDataProcessor):
+    """Render Data tab with dynamic month tabs"""
+
+    # Get dynamic months from data
+    tab_labels, month_keys, month_names = get_dynamic_months_crm(processor.df)
+
+    # Create month tabs
+    month_tabs = st.tabs(tab_labels)
+
+    for idx, (tab, month_key, month_name) in enumerate(zip(month_tabs, month_keys, month_names)):
+        with tab:
+            render_month_data_crm(processor, month_key, month_name)
 
 
 def render_analytics_tab(processor: CRMDataProcessor):

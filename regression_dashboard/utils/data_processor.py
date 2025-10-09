@@ -68,41 +68,36 @@ class RegressionDataProcessor:
     
     def filter_by_date_range(self, filter_type: str) -> pd.DataFrame:
         """
-        Filter data by date range using exact calendar month logic
-        
+        Filter data by month name (dynamically handles all 12 months)
+
         Args:
-            filter_type: 'current_month', 'next_month', or 'ytd'
-            
+            filter_type: lowercase month name ('january', 'february', etc.) or 'ytd'
+
         Returns:
             Filtered DataFrame
         """
-        today = pd.Timestamp.today().normalize()
-        
-        if filter_type == 'current_month':
-            # Current Month: Exact month and year match
-            mask = (self.df['Go Live Month'] == today.month) & (self.df['Go Live Year'] == today.year)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Regression Processor] Current Month: {today.month}/{today.year}, Records: {len(filtered)}")
-            return filtered
-        
-        elif filter_type == 'next_month':
-            # Next Month: Exact next month and year match (handles year rollover)
-            next_date = today + pd.DateOffset(months=1)
-            mask = (self.df['Go Live Month'] == next_date.month) & (self.df['Go Live Year'] == next_date.year)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Regression Processor] Next Month: {next_date.month}/{next_date.year}, Records: {len(filtered)}")
-            return filtered
-        
-        elif filter_type == 'ytd':
-            # YTD: All records in current year up to current date
-            mask = (self.df['Go Live Year'] == today.year) & (self.df['Go Live Date'] <= today)
-            filtered = self.df[mask].copy()
-            print(f"[DEBUG Regression Processor] YTD: Year {today.year} up to {today.date()}, Records: {len(filtered)}")
-            return filtered
-        
+        if filter_type == 'ytd':
+            # YTD: All data (entire dataset)
+            filtered = self.df.copy()
         else:
-            # Default: return all data
-            return self.df.copy()
+            # Map month names to numbers
+            month_map = {
+                'january': 1, 'february': 2, 'march': 3, 'april': 4,
+                'may': 5, 'june': 6, 'july': 7, 'august': 8,
+                'september': 9, 'october': 10, 'november': 11, 'december': 12
+            }
+
+            if filter_type.lower() in month_map:
+                month_num = month_map[filter_type.lower()]
+                # Filter by month (any year in the data)
+                mask = self.df['Go Live Month'] == month_num
+                filtered = self.df[mask].copy()
+            else:
+                # Unknown filter, return all data
+                filtered = self.df.copy()
+
+        print(f"[DEBUG Regression Processor] Filtered by {filter_type}: {len(filtered)} records")
+        return filtered
     
     def get_kpis(self, df: pd.DataFrame) -> Dict[str, int]:
         """

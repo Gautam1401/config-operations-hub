@@ -33,7 +33,7 @@ def render_metric_cards(metrics: Dict, title: str):
             )
 
 
-def render_completion_rate_chart(data: Dict):
+def render_completion_rate_chart(data: Dict, key_prefix: str = ""):
     """Render completion rate visualization"""
     st.markdown("#### 📈 Completion Rate")
     
@@ -64,11 +64,11 @@ def render_completion_rate_chart(data: Dict):
         height=400,
         showlegend=False
     )
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    st.plotly_chart(fig, use_container_width=True, key=f"plotly_completion_rate_{key_prefix}")
 
 
-def render_regional_heatmap(regional_data: Dict, status_field: str):
+def render_regional_heatmap(regional_data: Dict, status_field: str, key_prefix: str = ""):
     """Render regional performance heatmap"""
     st.markdown("#### 🌍 Regional Performance")
     
@@ -111,11 +111,13 @@ def render_regional_heatmap(regional_data: Dict, status_field: str):
         yaxis_title="Status",
         height=400
     )
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    # Create unique key from status_field and prefix
+    key_suffix = status_field.lower().replace(" ", "_").replace("/", "_")
+    st.plotly_chart(fig, use_container_width=True, key=f"plotly_regional_heatmap_{key_suffix}_{key_prefix}")
 
 
-def render_pie_chart(data: Dict, title: str, labels: List[str], values_keys: List[str], colors: List[str]):
+def render_pie_chart(data: Dict, title: str, labels: List[str], values_keys: List[str], colors: List[str], key_prefix: str = ""):
     """Render pie chart"""
     st.markdown(f"#### {title}")
     
@@ -135,8 +137,10 @@ def render_pie_chart(data: Dict, title: str, labels: List[str], values_keys: Lis
         height=400,
         showlegend=True
     )
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    # Create unique key from title and prefix
+    key_suffix = title.lower().replace(" ", "_").replace("/", "_")
+    st.plotly_chart(fig, use_container_width=True, key=f"plotly_pie_{key_suffix}_{key_prefix}")
 
 
 def render_out_of_scope_analysis(out_of_scope_by_region: Dict):
@@ -183,7 +187,7 @@ def render_out_of_scope_analysis(out_of_scope_by_region: Dict):
             """, unsafe_allow_html=True)
 
 
-def render_test_pass_rates(test_pass_rates: Dict):
+def render_test_pass_rates(test_pass_rates: Dict, key_prefix: str = ""):
     """Render test-specific pass rates"""
     st.markdown("#### 🧪 Test-Specific Pass Rates")
     
@@ -214,11 +218,11 @@ def render_test_pass_rates(test_pass_rates: Dict):
         height=400,
         yaxis_range=[0, 100]
     )
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    st.plotly_chart(fig, use_container_width=True, key=f"plotly_test_pass_rates_{key_prefix}")
 
 
-def render_score_distribution(score_dist: Dict):
+def render_score_distribution(score_dist: Dict, key_prefix: str = ""):
     """Render weighted score distribution"""
     st.markdown("#### 📊 Weighted Score Distribution")
     
@@ -248,8 +252,8 @@ def render_score_distribution(score_dist: Dict):
         height=400,
         showlegend=False
     )
-    
-    st.plotly_chart(fig, use_container_width=True)
+
+    st.plotly_chart(fig, use_container_width=True, key=f"plotly_score_distribution_{key_prefix}")
 
 
 def render_at_risk_stores(at_risk_stores: List[Dict]):
@@ -271,7 +275,7 @@ def render_at_risk_stores(at_risk_stores: List[Dict]):
     st.warning(f"🚨 {len(at_risk_stores)} stores require immediate attention!")
 
 
-def render_assignee_performance(assignee_data: Dict, category: str):
+def render_assignee_performance(assignee_data: Dict, category: str, key_prefix: str = ""):
     """Render assignee performance analysis"""
     st.markdown(f"#### 👤 Assignee Performance - {category}")
 
@@ -312,7 +316,7 @@ def render_assignee_performance(assignee_data: Dict, category: str):
             yaxis_range=[0, 100]
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"plotly_config_assignee_{key_prefix}")
 
         # Table - format completion rate
         display_df = df[['Assignee', 'total', 'in_scope', 'out_of_scope', 'completion_rate']].copy()
@@ -353,7 +357,7 @@ def render_assignee_performance(assignee_data: Dict, category: str):
             yaxis_range=[0, 100]
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"plotly_pregl_assignee_{key_prefix}")
 
         # Table - format GTG rate
         display_df = df[['Assignee', 'total', 'gtg', 'gtg_rate']].copy()
@@ -393,7 +397,7 @@ def render_assignee_performance(assignee_data: Dict, category: str):
             yaxis_range=[0, 100]
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"plotly_golive_assignee_{key_prefix}")
 
         # Table - format GTG rate
         display_df = df[['Assignee', 'total', 'gtg', 'blockers', 'gtg_rate']].copy()
